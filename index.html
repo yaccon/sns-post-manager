@@ -169,6 +169,42 @@ root.appendChild(div);
 });
 }
 render();
+const notified = new Set();
+
+function checkNotifications() {
+  const now = Date.now();
+
+  posts.forEach(p => {
+    if (p.done || !p.date) return;
+
+    const scheduled = new Date(p.date).getTime();
+    if (!Number.isFinite(scheduled)) return;
+
+    [
+      { minutes: 5, label: "5分前" },
+      { minutes: 0, label: "予定時刻" }
+    ].forEach(n => {
+      const target = scheduled - n.minutes * 60000;
+      const id = p.id + "-" + n.minutes;
+
+      if (
+        now >= target &&
+        now < target + 60000 &&
+        !notified.has(id)
+      ) {
+        notified.add(id);
+        alert(
+          "SNS投稿のお知らせ\n" +
+          p.account + " / " + p.platform +
+          "\n" + n.label + "です"
+        );
+      }
+    });
+  });
+}
+
+setInterval(checkNotifications, 15000);
+checkNotifications();
 </script>
 </body>
 </html>
