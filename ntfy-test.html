@@ -1,1 +1,18 @@
-
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ntfy通知テスト</title>
+<style>body{font-family:-apple-system,sans-serif;background:#f4f6fa;margin:0;color:#222}header{background:#243b65;color:white;padding:20px}main{max-width:600px;margin:20px auto;padding:18px;background:white;border-radius:14px}input,button{box-sizing:border-box;width:100%;padding:15px;margin:10px 0;font-size:16px;border-radius:9px}input{border:1px solid #bbb}button{background:#2563eb;color:white;border:0;font-weight:bold}button:disabled{opacity:.5}#status{white-space:pre-wrap;overflow-wrap:anywhere}</style></head>
+<body><header><h2>SNS投稿管理 ntfy通知テスト</h2></header><main><p>ホーム画面のntfyで購読済みのトピック名を入力してください。名前は保存されません。</p><label for="topic">トピック名</label><input id="topic" autocomplete="off" spellcheck="false"><button id="now">今すぐ通知</button><button id="later">1分後に通知を予約</button><p id="status" role="status"></p><p>予約後はiPhoneをロックして受信を確認してください。通知の遅延や不達はあり得ます。公開トピックに個人情報を送らないでください。</p></main>
+<script>
+async function send(later){
+const topic=document.getElementById('topic').value.trim(),status=document.getElementById('status'),buttons=[document.getElementById('now'),document.getElementById('later')];
+if(!/^[a-zA-Z0-9_-]{1,64}$/.test(topic)){status.textContent='トピック名は英数字・_・-で入力してください';return}
+buttons.forEach(b=>b.disabled=true);status.textContent='送信中…';
+try{const data={topic,title:'SNS投稿管理 テスト通知',message:later?'予約通知のテストです':'即時通知のテストです'};if(later)data.delay='1m';
+const res=await fetch('https://ntfy.sh/',{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify(data)});
+if(!res.ok)throw new Error('HTTP '+res.status+' '+(await res.text()).slice(0,120));
+status.textContent=later?'予約を受け付けました。iPhoneをロックして約1分お待ちください。':'送信を受け付けました。ntfyで確認してください。';
+}catch(e){status.textContent='送信失敗: '+e.message+'。ブラウザの通信制限やntfyの制限をご確認ください。'}finally{buttons.forEach(b=>b.disabled=false)}
+}
+document.getElementById('now').onclick=()=>send(false);
+document.getElementById('later').onclick=()=>send(true);
+</script></body></html>
