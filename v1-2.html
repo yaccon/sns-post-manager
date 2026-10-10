@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SNS投稿管理 Ver.1.2</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#222;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+header{background:#243b65;color:white;padding:20px 16px}h1{font-size:22px;margin:0}header p{font-size:13px;margin:8px 0 0}
+main{max-width:650px;margin:auto;padding:16px}.card{background:white;border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px #0001}
+h2{font-size:17px;margin:0 0 15px}label{display:block;font-size:13px;font-weight:bold;margin:12px 0 5px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #ccd2dc;border-radius:9px;font-size:16px;background:white}
+textarea{min-height:125px;resize:vertical}button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;cursor:pointer}
+.primary{background:#2563eb;color:white;width:100%;margin-top:15px}.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.actions button{background:#e9eef8}
+.post{border-top:1px solid #ddd;padding:15px 0}.post:first-child{border-top:0}.meta{font-size:12px;color:#666}.body{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0}.done{opacity:.55}.empty,.hint{color:#666;font-size:13px;line-height:1.7}
+.notice{background:#fff5dc;border-radius:9px;padding:12px;font-size:13px;line-height:1.6}.status{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;margin-top:10px}
+</style></head><body>
+<header><h1>SNS投稿管理 Ver.1.2</h1><p>投稿管理＋ntfy予約通知（実証版）</p></header><main>
+<section class="card"><h2>通知設定</h2>
+<p class="hint">iPhoneのホーム画面に追加したntfyで購読済みのトピック名を入力してください。設定はこのブラウザ内に保存されます。公開トピックに投稿本文や個人情報は送りません。</p>
+<label for="topic">ntfyトピック名</label><input id="topic" autocomplete="off" spellcheck="false" placeholder="購読中のトピック名">
+<button class="primary" id="saveTopic">通知先を保存</button><p id="topicStatus" class="status" role="status"></p>
+</section>
+<section class="card"><h2>新しい投稿</h2>
+<label for="account">アカウント</label><select id="account"><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option></select>
+<label for="platform">投稿先</label><select id="platform"><option>X</option><option>Threads</option></select>
+<label for="date">投稿予定日時</label><input type="datetime-local" id="date">
+<label for="content">投稿本文</label><textarea id="content" placeholder="投稿文を入力してください"></textarea>
+<button class="primary" id="savePost">投稿を保存</button>
+<p id="saveStatus" class="status" role="status"></p>
+</section>
+<section class="card"><h2>投稿一覧</h2><div id="posts"></div></section>
+<section class="card"><h2>通知の注意点</h2>
+<div class="notice">通知は投稿保存後に「通知を予約」ボタンで登録します。ntfyで予約した通知は、このアプリから取り消せません。予約後に投稿を削除・投稿済みにしても通知が届く場合があります。通知予約は約10秒〜3日先が対象です。3日より先の予定は日が近づいてから予約してください。ntfyの無料サービスには配信制限・遅延・不達の可能性があります。</div>
+<p class="hint">Ver.1.1と同じブラウザ内の投稿データを表示します。通知設定はこの端末・ブラウザのみで共有されます。</p></section>
+</main><script>
+'use strict';
+const key='sns-post-manager-v1', topicKey='sns-post-manager-ntfy-topic-v12', stateKey='sns-post-manager-ntfy-state-v12';
+let posts=[], states={};
+try{posts=JSON.parse(localStorage.getItem(key)||'[]');if(!Array.isArray(posts))posts=[]}catch(e){posts=[]}
+try{states=JSON.parse(localStorage.getItem(stateKey)||'{}');if(!states||Array.isArray(states)||typeof states!=='object')states={}}catch(e){states={}}
+const el=id=>document.getElementById(id);
+const validTopic=t=>/^[a-zA-Z0-9_-]{1,64}$/.test(t);
+const topic=()=>el('topic').value.trim();
+try{el('topic').value=localStorage.getItem(topicKey)||''}catch(e){}
+function persist(){try{localStorage.setItem(key,JSON.stringify(posts));return true}catch(e){alert('投稿を保存できませんでした');return false}}
+function persistStates(){try{localStorage.setItem(stateKey,JSON.stringify(states));return true}catch(e){alert('通知状態を保存できませんでした');return false}}
+el('saveTopic').onclick=()=>{if(!validTopic(topic())){el('topicStatus').textContent='トピック名は英数字・_・-の1〜64文字にしてください';return}
+try{localStorage.setItem(topicKey,topic());el('topicStatus').textContent='通知先を保存しました'}catch(e){el('topicStatus').textContent='保存できませんでした'}};
+el('savePost').onclick=()=>{
+const content=el('content').value.trim();if(!content){el('saveStatus').textContent='投稿文を入力してください';return}
+const item={id:Date.now()+'-'+Math.random(),account:el('account').value,platform:el('platform').value,date:el('date').value,content,done:false};
+posts.push(item);if(!persist()){posts.pop();return}
+el('content').value='';el('saveStatus').textContent='投稿を保存しました。通知が必要なら一覧の「通知を予約」を押してください。';render()};
+function fallbackCopy(text){const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();const ok=document.execCommand('copy');t.remove();alert(ok?'コピーしました':'コピーできませんでした')}
+async function copyPost(id){const p=posts.find(x=>x.id===id);if(!p)return;try{await navigator.clipboard.writeText(p.content);alert('コピーしました')}catch(e){fallbackCopy(p.content)}}
+function openPlatform(id){const p=posts.find(x=>x.id===id);if(p)window.open(p.platform==='X'?'https://x.com/compose/post':'https://www.threads.net/','_blank','noopener')}
+function toggleDone(id){const p=posts.find(x=>x.id===id);if(!p)return;p.done=!p.done;persist();render()}
+function deletePost(id){const p=posts.find(x=>x.id===id);if(!p)return;const msg=states[id]?'この投稿には送信済みの通知予約があります。削除しても通知は取り消されません。削除しますか？':'この投稿を削除しますか？';if(!confirm(msg))return;posts=posts.filter(x=>x.id!==id);persist();render()}
+async function reserve(id){
+const p=posts.find(x=>x.id===id);if(!p||p.done)return;
+if(states[id]){alert('この投稿は通知予約済み、または予約結果が不明です。重複送信を防ぐため再予約できません。');return}
+if(!validTopic(topic())){alert('先にntfyトピック名を入力・保存してください');return}
+if(!p.date){alert('投稿予定日時がありません');return}
+const time=new Date(p.date).getTime(),now=Date.now(),targets=[{when:time-300000,label:'5分前'},{when:time,label:'予定時刻'}].filter(x=>x.when-now>=10000&&x.when-now<=72*3600000);
+if(!targets.length){alert('通知可能な時刻がありません。10秒以上、3日以内の予定を指定してください。');return}
+const selected=topic();if(!confirm(p.account+'／'+p.platform+' の通知を '+targets.length+' 件予約しますか？\n予約後は取り消せません。'))return;
+states[id]={status:'sending',count:0,at:new Date().toISOString()};if(!persistStates()){delete states[id];return}render();
+let sent=0,errors=[];
+for(const target of targets){
+try{
+const seconds=Math.max(10,Math.ceil((target.when-Date.now())/1000));
+if(seconds>72*3600){errors.push(target.label+'：予約期限外');continue}
+const payload={topic:selected,title:'SNS投稿のお知らせ',message:p.account+' / '+p.platform+'：'+target.label+'です',delay:seconds+'s'};
+const response=await fetch('https://ntfy.sh/',{method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify(payload)});
+if(!response.ok)throw Error('HTTP '+response.status);
+sent++;
+}catch(e){errors.push(target.label+'：'+e.message)}
+}
+states[id]={status:errors.length?'partial':'reserved',count:sent,at:new Date().toISOString()};
+persistStates();render();
+alert(sent+'件の予約リクエストが受け付けられました。'+(errors.length?'\nエラー／結果不明：'+errors.join('、')+'\n重複防止のため再送は自動で行いません。':''));
+}
+function render(){
+const root=el('posts');root.replaceChildren();
+if(!posts.length){const p=document.createElement('p');p.className='empty';p.textContent='まだ投稿がありません';root.appendChild(p);return}
+[...posts].sort((a,b)=>Number(a.done)-Number(b.done)||(a.date||'9999').localeCompare(b.date||'9999')).forEach(p=>{
+const div=document.createElement('div');div.className='post'+(p.done?' done':'');
+const meta=document.createElement('div');meta.className='meta';meta.textContent=p.account+' ／ '+p.platform+' ／ '+(p.date?p.date.replace('T',' '):'日時未設定')+(p.done?' ／ 投稿済み':' ／ 未投稿');
+const body=document.createElement('div');body.className='body';body.textContent=p.content;
+const note=document.createElement('div');note.className='meta';const st=states[p.id];note.textContent=st?'通知：'+(st.status==='reserved'?'予約受付済み':st.status==='sending'?'送信途中／結果不明':'一部予約受付・一部不明')+'（'+st.count+'件）':'通知：未予約';
+const actions=document.createElement('div');actions.className='actions';
+const buttons=[['コピー',()=>copyPost(p.id)],['投稿先を開く',()=>openPlatform(p.id)],['通知を予約',()=>reserve(p.id),!!st||p.done], [p.done?'未投稿に戻す':'投稿済みにする',()=>toggleDone(p.id)],['削除',()=>deletePost(p.id)]];
+buttons.forEach(([label,fn,disabled])=>{const b=document.createElement('button');b.textContent=label;b.onclick=fn;b.disabled=!!disabled;actions.appendChild(b)});
+div.append(meta,body,note,actions);root.appendChild(div)});
+}
+render();
+</script></body></html>
