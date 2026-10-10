@@ -28,6 +28,14 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .done{opacity:.55}
 .empty{color:#777;font-size:14px}
 .help{font-size:13px;color:#536174;line-height:1.7}.secondary{background:#e9eef8;color:#173e76;width:100%;margin-top:9px}.danger{background:#fff1f1;color:#a22}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.status{font-size:13px;white-space:pre-wrap;color:#176447;margin-top:10px}.smallarea{min-height:100px}.pill{background:#eef4ff;border-radius:8px;padding:9px;font-size:13px;margin:8px 0}
+.filters{margin-bottom:16px}
+.filter-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.filter-grid label{margin-top:0}
+.filters input,.filters select,.filters button{min-height:48px}
+.filters .row{gap:8px;margin-top:12px}
+.filters .row button{min-width:80px;margin-top:0}
+.filters button[aria-pressed="true"]{background:#243b65;color:white}
+.filter-count{font-size:13px;color:#536174;margin:12px 0 0}
 </style>
 </head>
 <body>
@@ -74,7 +82,23 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </section>
 <section class="card">
 <h2>投稿一覧</h2>
-<div class="row"><button class="secondary" onclick="filterPosts('all')">すべて</button><button class="secondary" onclick="filterPosts('pending')">未投稿</button><button class="secondary" onclick="filterPosts('done')">投稿済み</button></div>
+<div class="filters">
+<label for="searchPosts">本文を検索</label>
+<input type="search" id="searchPosts" placeholder="キーワードを入力" oninput="render()">
+<div class="filter-grid">
+<div><label for="filterAccount">アカウント</label>
+<select id="filterAccount" onchange="render()"><option value="">すべて</option></select></div>
+<div><label for="filterPlatform">投稿先</label>
+<select id="filterPlatform" onchange="render()"><option value="">すべて</option><option>X</option><option>Threads</option></select></div>
+</div>
+<div class="row" role="group" aria-label="投稿状況">
+<button type="button" class="secondary" data-post-filter="all" aria-pressed="true" onclick="filterPosts('all')">すべて</button>
+<button type="button" class="secondary" data-post-filter="pending" aria-pressed="false" onclick="filterPosts('pending')">未投稿</button>
+<button type="button" class="secondary" data-post-filter="done" aria-pressed="false" onclick="filterPosts('done')">投稿済み</button>
+</div>
+<button type="button" class="secondary" onclick="resetFilters()">検索・絞り込みをリセット</button>
+<p class="filter-count" id="filterCount" role="status" aria-live="polite"></p>
+</div>
 <div id="posts"></div>
 </section>
 </main>
@@ -149,6 +173,28 @@ persist();
 render();
 }
 function filterPosts(mode){currentFilter=mode;render()}
+function resetFilters(){
+document.getElementById("searchPosts").value="";
+document.getElementById("filterAccount").value="";
+document.getElementById("filterPlatform").value="";
+currentFilter="all";
+render();
+}
+function syncAccountOptions(){
+const select=document.getElementById("filterAccount");
+const selected=select.value;
+const accounts=[...new Set(["カイ","後輩くん","漫画・恋愛",...posts.map(p=>p.account)])].filter(a=>typeof a==="string"&&a);
+if(selected&&!accounts.includes(selected))accounts.push(selected);
+const values=["",...accounts];
+if(values.length===select.options.length&&values.every((v,i)=>select.options[i].value===v))return;
+select.replaceChildren();
+values.forEach(value=>{
+const option=document.createElement("option");
+option.value=value;option.textContent=value||"すべて";
+select.appendChild(option);
+});
+select.value=selected;
+}
 function editPost(id){const p=posts.find(x=>x.id===id);if(!p)return;
 const v=prompt("投稿本文を編集",p.content);if(v===null)return;if(!v.trim()){alert("本文は空にできません");return}
 const old=p.content;p.content=v.trim();if(!persist()){p.content=old;return}render()}
@@ -182,16 +228,29 @@ async function restoreBackup(e){const file=e.target.files[0];if(!file)return;try
 function render(){
 const root=document.getElementById("posts");
 root.replaceChildren();
-if(!posts.length){
+syncAccountOptions();
+const query=document.getElementById("searchPosts").value.trim().toLocaleLowerCase();
+const account=document.getElementById("filterAccount").value;
+const platform=document.getElementById("filterPlatform").value;
+document.querySelectorAll("[data-post-filter]").forEach(button=>{
+button.setAttribute("aria-pressed",String(button.dataset.postFilter===currentFilter));
+});
+const sorted=posts.filter(p=>
+(currentFilter==="all"||(currentFilter==="done"?p.done:!p.done))&&
+(!account||p.account===account)&&
+(!platform||p.platform===platform)&&
+(!query||String(p.content||"").toLocaleLowerCase().includes(query))
+).sort((a,b)=>
+Number(a.done)-Number(b.done)||
+(a.date||"9999").localeCompare(b.date||"9999"));
+document.getElementById("filterCount").textContent=sorted.length+"件表示 ／ 全"+posts.length+"件";
+if(!sorted.length){
 const empty=document.createElement("p");
 empty.className="empty";
-empty.textContent="まだ投稿がありません";
+empty.textContent=posts.length?"条件に合う投稿がありません":"まだ投稿がありません";
 root.appendChild(empty);
 return;
 }
-const sorted=posts.filter(p=>currentFilter==="all"||(currentFilter==="done"?p.done:!p.done)).sort((a,b)=>
-Number(a.done)-Number(b.done)||
-(a.date||"9999").localeCompare(b.date||"9999"));
 sorted.forEach(p=>{
 const div=document.createElement("div");
 div.className="post"+(p.done?" done":"");
