@@ -27,14 +27,26 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .body{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0}
 .done{opacity:.55}
 .empty{color:#777;font-size:14px}
+.help{font-size:13px;color:#536174;line-height:1.7}.secondary{background:#e9eef8;color:#173e76;width:100%;margin-top:9px}.danger{background:#fff1f1;color:#a22}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.status{font-size:13px;white-space:pre-wrap;color:#176447;margin-top:10px}.smallarea{min-height:100px}.pill{background:#eef4ff;border-radius:8px;padding:9px;font-size:13px;margin:8px 0}
 </style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.1</h1>
+<h1>SNS投稿管理 Ver.3</h1>
 <p>毎日の投稿作業を5分以内に</p>
 </header>
 <main>
+<section class="card">
+<h2>✨ AIで1週間分の投稿を作る</h2>
+<div class="pill">カイ・後輩くん・漫画恋愛 各14本 ／ 合計42本<br>毎日12:00・20:00 ／ API追加料金0円</div>
+<label for="weekstart">投稿を始める日</label><input type="date" id="weekstart">
+<label for="destination">投稿先（42本に共通）</label><select id="destination"><option>X</option><option>Threads</option></select>
+<button class="primary" onclick="generatePrompt()">① 42本の生成指示をコピーしてChatGPTを開く</button>
+<p class="help">ChatGPTに貼り付けて送信してください。返答はJSON形式で受け取り、下の欄に貼り付けます。自動送信やAPI呼び出しは行いません。</p>
+<label for="jsonImport">② ChatGPTの生成結果（JSON）</label><textarea class="smallarea" id="jsonImport" placeholder='[{"account":"カイ","date":"2026-10-12T12:00","content":"投稿文"}, ...]'></textarea>
+<button class="primary" onclick="importPosts()">③ 内容を確認して一括登録</button>
+<p class="status" id="importStatus" role="status"></p>
+</section>
 <section class="card">
 <h2>新しい投稿</h2>
 <label>アカウント</label>
@@ -55,13 +67,20 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <button class="primary" onclick="savePost()">投稿を保存</button>
 </section>
 <section class="card">
+<h2>データのバックアップ</h2>
+<p class="help">機種変更やブラウザデータ消去に備えて、定期的に保存してください。旧Ver.1の投稿も同じ保存領域から読み込みます。</p>
+<div class="row"><button class="secondary" onclick="exportBackup()">バックアップを保存</button><button class="secondary" onclick="document.getElementById('restoreFile').click()">バックアップを復元</button></div>
+<input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)">
+</section>
+<section class="card">
 <h2>投稿一覧</h2>
+<div class="row"><button class="secondary" onclick="filterPosts('all')">すべて</button><button class="secondary" onclick="filterPosts('pending')">未投稿</button><button class="secondary" onclick="filterPosts('done')">投稿済み</button></div>
 <div id="posts"></div>
 </section>
 </main>
 <script>
 const key="sns-post-manager-v1";
-let posts=[];
+let posts=[];let currentFilter="all";
 try{
 posts=JSON.parse(localStorage.getItem(key)||"[]");
 if(!Array.isArray(posts))posts=[];
@@ -129,6 +148,37 @@ posts=posts.filter(x=>x.id!==id);
 persist();
 render();
 }
+function filterPosts(mode){currentFilter=mode;render()}
+function editPost(id){const p=posts.find(x=>x.id===id);if(!p)return;
+const v=prompt("投稿本文を編集",p.content);if(v===null)return;if(!v.trim()){alert("本文は空にできません");return}
+const old=p.content;p.content=v.trim();if(!persist()){p.content=old;return}render()}
+function localDay(date,offset){const d=new Date(date+"T12:00:00");d.setDate(d.getDate()+offset);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
+function generatePrompt(){
+const start=document.getElementById("weekstart").value;if(!start){alert("開始日を選んでください");return}
+const platform=document.getElementById("destination").value;
+const slots=[];for(const account of ["カイ","後輩くん","漫画・恋愛"]){for(let day=0;day<7;day++){for(const time of ["12:00","20:00"]){slots.push({account,platform,date:localDay(start,day)+"T"+time})}}}
+const instruction="次の42枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けの実践的な発信。後輩くんは初心者の成長を描くフィクション企画（架空の実績を現実の事実として断定しない）。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。42個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
+copyText(instruction).then(ok=>{if(ok){alert("生成指示をコピーしました。ChatGPTを開き、貼り付けて送信してください。");window.open("https://chatgpt.com/","_blank","noopener")}else{document.getElementById("jsonImport").value=instruction;alert("コピーできなかったため欄に指示を表示しました。長押ししてコピーしてください。")}})
+}
+async function copyText(value){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(value);return true}}catch(e){}const t=document.createElement("textarea");t.value=value;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();const ok=document.execCommand("copy");t.remove();return ok}
+function importPosts(){
+const status=document.getElementById("importStatus");let raw=document.getElementById("jsonImport").value.trim();raw=raw.replace(/^\x60{3}(?:json)?\s*/i,"").replace(/\s*\x60{3}$/,"");
+let items;try{items=JSON.parse(raw)}catch(e){status.textContent="JSON形式を確認してください。途中で切れている場合はChatGPTに続きを依頼してください。";return}
+if(!Array.isArray(items)||items.length!==42){status.textContent="42本ちょうどの配列が必要です。現在："+(Array.isArray(items)?items.length:"配列ではありません")+"本";return}
+const allowed=["カイ","後輩くん","漫画・恋愛"];const start=document.getElementById("weekstart").value;const platform=document.getElementById("destination").value;
+if(!start){status.textContent="開始日を選んでください";return}
+const expected=new Set();for(const a of allowed)for(let i=0;i<7;i++)for(const t of ["12:00","20:00"])expected.add(a+"|"+localDay(start,i)+"T"+t);
+const seen=new Set();
+for(const item of items){if(!item||!allowed.includes(item.account)||item.platform!==platform||typeof item.date!=="string"||typeof item.content!=="string"||!item.content.trim()){status.textContent="アカウント・投稿先・日時・本文に不正な値があります。";return}
+const id=item.account+"|"+item.date;if(!expected.has(id)||seen.has(id)){status.textContent="日時・アカウントに重複か指定外の値があります。";return}seen.add(id)}
+const existing=new Set(posts.map(p=>p.account+"|"+p.platform+"|"+p.date));const duplicates=items.filter(p=>existing.has(p.account+"|"+p.platform+"|"+p.date)).length;
+if(!confirm("42本を登録します。既存投稿と同じ枠が"+duplicates+"件あります。重複枠はスキップします。よろしいですか？"))return;
+const fresh=items.filter(p=>!existing.has(p.account+"|"+p.platform+"|"+p.date)).map(p=>({id:Date.now()+"-"+Math.random(),account:p.account,platform:p.platform,date:p.date,content:p.content.trim(),done:false}));
+posts.push(...fresh);if(!persist()){posts.splice(posts.length-fresh.length,fresh.length);status.textContent="保存に失敗しました";return}
+status.textContent=fresh.length+"本を登録しました（重複スキップ："+duplicates+"本）。";document.getElementById("jsonImport").value="";render()
+}
+function exportBackup(){const blob=new Blob([JSON.stringify({version:3,posts},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sns-posts-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+async function restoreBackup(e){const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());const arr=Array.isArray(data)?data:data.posts;if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("形式が違います");if(!confirm(arr.length+"件を現在の投稿に追加しますか？"))return;const old=[...posts];const ids=new Set(posts.map(p=>String(p.id)));for(const p of arr){if(ids.has(String(p.id)))continue;posts.push({...p,id:p.id||Date.now()+"-"+Math.random()})}if(!persist())posts=old;render()}catch(err){alert("復元できません："+err.message)}finally{e.target.value=""}}
 function render(){
 const root=document.getElementById("posts");
 root.replaceChildren();
@@ -139,7 +189,7 @@ empty.textContent="まだ投稿がありません";
 root.appendChild(empty);
 return;
 }
-const sorted=[...posts].sort((a,b)=>
+const sorted=posts.filter(p=>currentFilter==="all"||(currentFilter==="done"?p.done:!p.done)).sort((a,b)=>
 Number(a.done)-Number(b.done)||
 (a.date||"9999").localeCompare(b.date||"9999"));
 sorted.forEach(p=>{
@@ -155,6 +205,7 @@ const actions=document.createElement("div");
 actions.className="actions";
 [
 ["コピー",()=>copyPost(p.id)],
+["編集",()=>editPost(p.id)],
 ["投稿先を開く",()=>openPlatform(p.id)],
 [p.done?"未投稿に戻す":"投稿済みにする",()=>toggleDone(p.id)],
 ["削除",()=>deletePost(p.id)]
@@ -168,6 +219,7 @@ div.append(meta,body,actions);
 root.appendChild(div);
 });
 }
+document.getElementById("weekstart").value=localDay(new Date().toLocaleDateString("sv-SE"),1);
 render();
 
 const notified = new Set();
