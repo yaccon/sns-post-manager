@@ -28,11 +28,11 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .done{opacity:.55}
 .empty{color:#777;font-size:14px}
 .help{font-size:13px;color:#536174;line-height:1.7}.secondary{background:#e9eef8;color:#173e76;width:100%;margin-top:9px}.danger{background:#fff1f1;color:#a22}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.status{font-size:13px;white-space:pre-wrap;color:#176447;margin-top:10px}.smallarea{min-height:100px}.pill{background:#eef4ff;border-radius:8px;padding:9px;font-size:13px;margin:8px 0}
-</style>
+.selectpost{display:flex;align-items:center;gap:10px;font-size:14px}.selectpost input{width:24px;height:24px}.bulkbar{border:1px solid #ddd;padding:10px;border-radius:10px;margin:12px 0}.bulkbar button{min-height:44px}.danger{background:#ffe4e4;color:#a22}.warn{color:#a22}</style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3</h1>
+<h1>SNS投稿管理 Ver.3.1</h1>
 <p>毎日の投稿作業を5分以内に</p>
 </header>
 <main>
@@ -75,12 +75,12 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <section class="card">
 <h2>投稿一覧</h2>
 <div class="row"><button class="secondary" onclick="filterPosts('all')">すべて</button><button class="secondary" onclick="filterPosts('pending')">未投稿</button><button class="secondary" onclick="filterPosts('done')">投稿済み</button></div>
-<div id="posts"></div>
+<div class="bulkbar"><div class="row"><button class="secondary" onclick="selectVisible(true)">表示中を全選択</button><button class="secondary" onclick="selectVisible(false)">選択解除</button></div><p id="selectedCount">選択中：0件</p><div class="row"><button class="secondary" onclick="bulkDone(true)">選択を投稿済みに</button><button class="secondary" onclick="bulkDone(false)">選択を未投稿に</button></div><div class="row"><button class="danger" onclick="bulkDelete()">選択を削除</button><button class="danger" onclick="clearAll()">全部消去</button></div><p class="help warn">削除前にバックアップを保存してください。</p></div><div id="posts"></div>
 </section>
 </main>
 <script>
 const key="sns-post-manager-v1";
-let posts=[];let currentFilter="all";
+let posts=[];let currentFilter="all";const selected=new Set();
 try{
 posts=JSON.parse(localStorage.getItem(key)||"[]");
 if(!Array.isArray(posts))posts=[];
@@ -94,9 +94,10 @@ alert("保存できませんでした。ブラウザの保存設定や空き容�
 return false;
 }
 }
+function norm(t){return String(t||"").normalize("NFKC").replace(/\s+/g,"").replace(/[。、！？!?,.「」『』"'’‘“”・:：;；]/g,"").toLowerCase()}
 function savePost(){
 const content=document.getElementById("content").value.trim();
-if(!content){alert("投稿文を入力してください");return}
+if(!content){alert("投稿文を入力してください");return}if(posts.some(p=>norm(p.content)===norm(content))){alert("同じ本文がすでに登録されています");return}
 const item={
 id:Date.now()+"-"+Math.random(),
 account:document.getElementById("account").value,
@@ -157,7 +158,8 @@ function generatePrompt(){
 const start=document.getElementById("weekstart").value;if(!start){alert("開始日を選んでください");return}
 const platform=document.getElementById("destination").value;
 const slots=[];for(const account of ["カイ","後輩くん","漫画・恋愛"]){for(let day=0;day<7;day++){for(const time of ["12:00","20:00"]){slots.push({account,platform,date:localDay(start,day)+"T"+time})}}}
-const instruction="次の42枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けの実践的な発信。後輩くんは初心者の成長を描くフィクション企画（架空の実績を現実の事実として断定しない）。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。42個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
+const history=posts.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,100).map(p=>({account:p.account,content:p.content}));
+const instruction="過去投稿との重複防止が最優先です。末尾の過去投稿履歴を確認し、文章の言い換えだけでなく、主張・題材・例・冒頭のフックが似ている投稿も避けてください。毎週、新しい問題提起・視点・具体例を選んでください。次の42枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けの実践的な発信。後輩くんは初心者の成長を描くフィクション企画（架空の実績を現実の事実として断定しない）。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。42個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
 copyText(instruction).then(ok=>{if(ok){alert("生成指示をコピーしました。ChatGPTを開き、貼り付けて送信してください。");window.open("https://chatgpt.com/","_blank","noopener")}else{document.getElementById("jsonImport").value=instruction;alert("コピーできなかったため欄に指示を表示しました。長押ししてコピーしてください。")}})
 }
 async function copyText(value){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(value);return true}}catch(e){}const t=document.createElement("textarea");t.value=value;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();const ok=document.execCommand("copy");t.remove();return ok}
@@ -171,17 +173,23 @@ const expected=new Set();for(const a of allowed)for(let i=0;i<7;i++)for(const t 
 const seen=new Set();
 for(const item of items){if(!item||!allowed.includes(item.account)||item.platform!==platform||typeof item.date!=="string"||typeof item.content!=="string"||!item.content.trim()){status.textContent="アカウント・投稿先・日時・本文に不正な値があります。";return}
 const id=item.account+"|"+item.date;if(!expected.has(id)||seen.has(id)){status.textContent="日時・アカウントに重複か指定外の値があります。";return}seen.add(id)}
-const existing=new Set(posts.map(p=>p.account+"|"+p.platform+"|"+p.date));const duplicates=items.filter(p=>existing.has(p.account+"|"+p.platform+"|"+p.date)).length;
-if(!confirm("42本を登録します。既存投稿と同じ枠が"+duplicates+"件あります。重複枠はスキップします。よろしいですか？"))return;
-const fresh=items.filter(p=>!existing.has(p.account+"|"+p.platform+"|"+p.date)).map(p=>({id:Date.now()+"-"+Math.random(),account:p.account,platform:p.platform,date:p.date,content:p.content.trim(),done:false}));
+const existing=new Set(posts.map(p=>p.account+"|"+p.platform+"|"+p.date));const knownTexts=new Set(posts.map(p=>norm(p.content)));const unique=[];let duplicates=0,repeated=0;for(const p of items){if(existing.has(p.account+"|"+p.platform+"|"+p.date)){duplicates++;continue}const n=norm(p.content);if(knownTexts.has(n)){repeated++;continue}knownTexts.add(n);unique.push(p)}
+if(!confirm(unique.length+"本を登録します。日時重複："+duplicates+"件、本文重複："+repeated+"件をスキップします。よろしいですか？"))return;
+const fresh=unique.map(p=>({id:Date.now()+"-"+Math.random(),account:p.account,platform:p.platform,date:p.date,content:p.content.trim(),done:false}));
 posts.push(...fresh);if(!persist()){posts.splice(posts.length-fresh.length,fresh.length);status.textContent="保存に失敗しました";return}
-status.textContent=fresh.length+"本を登録しました（重複スキップ："+duplicates+"本）。";document.getElementById("jsonImport").value="";render()
+status.textContent=fresh.length+"本を登録しました（日時重複："+duplicates+"本、本文重複："+repeated+"本を除外）。意味の近い投稿は目視確認してください。";document.getElementById("jsonImport").value="";render()
 }
 function exportBackup(){const blob=new Blob([JSON.stringify({version:3,posts},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sns-posts-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 async function restoreBackup(e){const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());const arr=Array.isArray(data)?data:data.posts;if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("形式が違います");if(!confirm(arr.length+"件を現在の投稿に追加しますか？"))return;const old=[...posts];const ids=new Set(posts.map(p=>String(p.id)));for(const p of arr){if(ids.has(String(p.id)))continue;posts.push({...p,id:p.id||Date.now()+"-"+Math.random()})}if(!persist())posts=old;render()}catch(err){alert("復元できません："+err.message)}finally{e.target.value=""}}
+function visiblePosts(){return posts.filter(p=>currentFilter==="all"||(currentFilter==="done"?p.done:!p.done))}
+function updateSelected(){document.getElementById("selectedCount").textContent="選択中："+selected.size+"件"}
+function selectVisible(on){for(const p of visiblePosts()){if(on)selected.add(String(p.id));else selected.delete(String(p.id))}render()}
+function bulkDone(done){const targets=posts.filter(p=>selected.has(String(p.id)));if(!targets.length){alert("投稿を選択してください");return}if(!confirm(targets.length+"件を変更しますか？"))return;const old=targets.map(p=>p.done);targets.forEach(p=>p.done=done);if(!persist())targets.forEach((p,i)=>p.done=old[i]);selected.clear();render()}
+function bulkDelete(){const n=posts.filter(p=>selected.has(String(p.id))).length;if(!n){alert("投稿を選択してください");return}if(!confirm(n+"件を削除しますか？元に戻せません。"))return;const old=posts;posts=posts.filter(p=>!selected.has(String(p.id)));if(!persist())posts=old;else selected.clear();render()}
+function clearAll(){if(!posts.length){alert("削除する投稿がありません");return}if(!confirm("全"+posts.length+"件を消去します。バックアップを保存しましたか？"))return;if(prompt("本当に全部消去する場合は「全削除」と入力")!=="全削除")return;const old=posts;posts=[];if(!persist())posts=old;else selected.clear();render()}
 function render(){
 const root=document.getElementById("posts");
-root.replaceChildren();
+root.replaceChildren();updateSelected();
 if(!posts.length){
 const empty=document.createElement("p");
 empty.className="empty";
@@ -189,12 +197,13 @@ empty.textContent="まだ投稿がありません";
 root.appendChild(empty);
 return;
 }
-const sorted=posts.filter(p=>currentFilter==="all"||(currentFilter==="done"?p.done:!p.done)).sort((a,b)=>
+const sorted=visiblePosts().sort((a,b)=>
 Number(a.done)-Number(b.done)||
 (a.date||"9999").localeCompare(b.date||"9999"));
 sorted.forEach(p=>{
 const div=document.createElement("div");
 div.className="post"+(p.done?" done":"");
+const checkLabel=document.createElement("label");checkLabel.className="selectpost";const check=document.createElement("input");check.type="checkbox";check.checked=selected.has(String(p.id));check.onchange=()=>{if(check.checked)selected.add(String(p.id));else selected.delete(String(p.id));updateSelected()};const checkText=document.createElement("span");checkText.textContent="この投稿を選択";checkLabel.append(check,checkText);div.appendChild(checkLabel);
 const meta=document.createElement("div");
 meta.className="meta";
 meta.textContent=p.account+" ／ "+p.platform+" ／ "+(p.date?p.date.replace("T"," "):"日時未設定")+(p.done?" ／ 投稿済み":" ／ 未投稿");
