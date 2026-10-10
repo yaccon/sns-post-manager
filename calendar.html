@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="SNSカレンダー"><title>SNS投稿カレンダー</title>
+<style>*{box-sizing:border-box}body{margin:0;background:#f4f6fa;color:#222;font-family:-apple-system,BlinkMacSystemFont,sans-serif}header{background:#243b65;color:white;padding:17px}h1{font-size:21px;margin:0}main{max-width:720px;margin:auto;padding:12px}.card{background:white;border-radius:14px;padding:12px;margin:10px 0;box-shadow:0 2px 8px #0001}.head{display:flex;align-items:center;justify-content:space-between;gap:5px}.head h2{font-size:18px;margin:0}button{cursor:pointer;border:0;border-radius:8px;background:#e9eef8;padding:10px;font-size:14px}.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}.dow{text-align:center;font-size:12px;padding:10px 0;color:#555}.day{border:1px solid #e0e4eb;border-radius:7px;min-height:72px;padding:3px;min-width:0}.other{opacity:.35}.today{border:2px solid #2563eb}.num{background:none;padding:2px;font-size:12px;font-weight:bold}.chip{display:block;width:100%;padding:3px;margin-top:3px;text-align:left;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.kai{background:#dceaff}.kouhai{background:#def5e5}.manga{background:#fce2ef}.legend{font-size:12px;margin:12px 0;color:#555}.detail{white-space:pre-wrap;overflow-wrap:anywhere;border-top:1px solid #eee;padding:12px 0;font-size:14px}.small{font-size:12px;color:#666}.link{display:inline-block;color:#1e56a0;text-decoration:none;padding:9px 0}</style></head>
+<body><header><h1>📅 SNS投稿カレンダー</h1></header><main><section class="card"><div class="head"><button id="prev">◀ 前月</button><h2 id="month"></h2><button id="next">翌月 ▶</button></div><div class="legend">🔵 カイ　🟢 後輩くん　🌸 漫画・恋愛</div><div id="grid" class="grid"></div><p><button id="today">今月に戻る</button></p></section>
+<section class="card"><strong id="selectedTitle">日付を選んでください</strong><div id="details" class="small">日付を押すと投稿予定を表示します。</div></section>
+<section class="card"><a class="link" href="./v1-4.html">← 投稿管理アプリに戻る</a><p class="small">同じブラウザ内の投稿データを読み込みます。別ブラウザや別端末とは自動共有されません。</p></section></main>
+<script>
+const key='sns-post-manager-v1';let posts=[];
+function load(){try{const p=JSON.parse(localStorage.getItem(key)||'[]');posts=Array.isArray(p)?p:[]}catch(e){posts=[]}}
+const el=id=>document.getElementById(id);const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+let month=new Date();month.setDate(1);month.setHours(0,0,0,0);
+function details(day){
+const items=posts.filter(p=>typeof p.date==='string'&&p.date.slice(0,10)===day).sort((a,b)=>a.date.localeCompare(b.date));
+el('selectedTitle').textContent=day.replaceAll('-','/')+' の投稿';
+const root=el('details');root.replaceChildren();
+if(!items.length){root.textContent='予定はありません';return}
+items.forEach(p=>{const div=document.createElement('div');div.className='detail';div.textContent=(p.date.slice(11)||'')+'　'+(p.account||'')+'／'+(p.platform||'')+(p.done?'（投稿済み）':'')+'\n'+(p.content||'');root.appendChild(div)});
+}
+function render(){
+load();el('month').textContent=month.getFullYear()+'年'+(month.getMonth()+1)+'月';
+const grid=el('grid');grid.replaceChildren();
+['日','月','火','水','木','金','土'].forEach(s=>{const d=document.createElement('div');d.className='dow';d.textContent=s;grid.appendChild(d)});
+const y=month.getFullYear(),m=month.getMonth(),first=new Date(y,m,1),last=new Date(y,m+1,0),start=1-first.getDay(),count=Math.ceil((first.getDay()+last.getDate())/7)*7;
+for(let i=0;i<count;i++){
+const d=new Date(y,m,start+i),day=ymd(d),items=posts.filter(p=>typeof p.date==='string'&&p.date.slice(0,10)===day).sort((a,b)=>a.date.localeCompare(b.date));
+const cell=document.createElement('div');cell.className='day'+(d.getMonth()!==m?' other':'')+(day===ymd(new Date())?' today':'');
+const num=document.createElement('button');num.className='num';num.textContent=d.getDate();num.onclick=()=>details(day);cell.appendChild(num);
+items.slice(0,3).forEach(p=>{const b=document.createElement('button');b.className='chip '+(p.account==='カイ'?'kai':p.account==='後輩くん'?'kouhai':'manga');b.textContent=p.date.slice(11)+' '+p.platform;b.onclick=()=>details(day);cell.appendChild(b)});
+if(items.length>3){const b=document.createElement('button');b.className='num';b.textContent='+'+(items.length-3)+'件';b.onclick=()=>details(day);cell.appendChild(b)}
+grid.appendChild(cell)}
+}
+el('prev').onclick=()=>{month.setMonth(month.getMonth()-1);render()};
+el('next').onclick=()=>{month.setMonth(month.getMonth()+1);render()};
+el('today').onclick=()=>{month=new Date();month.setDate(1);render()};
+window.addEventListener('pageshow',render);window.addEventListener('storage',render);render();
+</script></body></html>
