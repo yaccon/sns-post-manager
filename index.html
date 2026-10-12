@@ -28,11 +28,11 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .done{opacity:.55}
 .empty{color:#777;font-size:14px}
 .help{font-size:13px;color:#536174;line-height:1.7}.secondary{background:#e9eef8;color:#173e76;width:100%;margin-top:9px}.danger{background:#fff1f1;color:#a22}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.status{font-size:13px;white-space:pre-wrap;color:#176447;margin-top:10px}.smallarea{min-height:100px}.pill{background:#eef4ff;border-radius:8px;padding:9px;font-size:13px;margin:8px 0}
-.selectpost{display:flex;align-items:center;gap:10px;font-size:14px}.selectpost input{width:24px;height:24px}.bulkbar{border:1px solid #ddd;padding:10px;border-radius:10px;margin:12px 0}.bulkbar button{min-height:44px}.danger{background:#ffe4e4;color:#a22}.warn{color:#a22}</style>
+.selectpost{display:flex;align-items:center;gap:10px;font-size:14px}.selectpost input{width:24px;height:24px}.bulkbar{border:1px solid #ddd;padding:10px;border-radius:10px;margin:12px 0}.bulkbar button{min-height:44px}.danger{background:#ffe4e4;color:#a22}.warn{color:#a22}.reviewitem{display:flex;gap:10px;align-items:flex-start;border-top:1px solid #ddd;padding:12px 0;font-size:13px;font-weight:normal}.reviewitem input{width:24px;min-width:24px;height:24px;margin:2px 0}.reviewitem span{line-height:1.6;overflow-wrap:anywhere}.reviewbox{margin-top:12px;padding:12px;background:#fff9ed;border-radius:10px}.reviewbox button{min-height:44px}</style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.1</h1>
+<h1>SNS投稿管理 Ver.3.2</h1>
 <p>毎日の投稿作業を5分以内に</p>
 </header>
 <main>
@@ -45,7 +45,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <p class="help">ChatGPTに貼り付けて送信してください。返答はJSON形式で受け取り、下の欄に貼り付けます。自動送信やAPI呼び出しは行いません。</p>
 <label for="jsonImport">② ChatGPTの生成結果（JSON）</label><textarea class="smallarea" id="jsonImport" placeholder='[{"account":"カイ","date":"2026-10-12T12:00","content":"投稿文"}, ...]'></textarea>
 <button class="primary" onclick="importPosts()">③ 内容を確認して一括登録</button>
-<p class="status" id="importStatus" role="status"></p>
+<p class="status" id="importStatus" role="status"></p><div id="importReview" aria-live="polite"></div>
 </section>
 <section class="card">
 <h2>新しい投稿</h2>
@@ -68,48 +68,78 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </section>
 <section class="card">
 <h2>データのバックアップ</h2>
-<p class="help">機種変更やブラウザデータ消去に備えて、定期的に保存してください。旧Ver.1の投稿も同じ保存領域から読み込みます。</p>
+<p class="help">投稿一覧と重複防止履歴を一緒に保存します。機種変更やブラウザデータ消去に備えて、定期的に保存してください。旧Ver.1形式も復元できます。</p>
 <div class="row"><button class="secondary" onclick="exportBackup()">バックアップを保存</button><button class="secondary" onclick="document.getElementById('restoreFile').click()">バックアップを復元</button></div>
 <input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)">
 </section>
 <section class="card">
 <h2>投稿一覧</h2>
 <div class="row"><button class="secondary" onclick="filterPosts('all')">すべて</button><button class="secondary" onclick="filterPosts('pending')">未投稿</button><button class="secondary" onclick="filterPosts('done')">投稿済み</button></div>
-<div class="bulkbar"><div class="row"><button class="secondary" onclick="selectVisible(true)">表示中を全選択</button><button class="secondary" onclick="selectVisible(false)">選択解除</button></div><p id="selectedCount">選択中：0件</p><div class="row"><button class="secondary" onclick="bulkDone(true)">選択を投稿済みに</button><button class="secondary" onclick="bulkDone(false)">選択を未投稿に</button></div><div class="row"><button class="danger" onclick="bulkDelete()">選択を削除</button><button class="danger" onclick="clearAll()">全部消去</button></div><p class="help warn">削除前にバックアップを保存してください。</p></div><div id="posts"></div>
+<div class="bulkbar"><div class="row"><button class="secondary" onclick="selectVisible(true)">表示中を全選択</button><button class="secondary" onclick="selectVisible(false)">選択解除</button></div><p id="selectedCount">選択中：0件</p><div class="row"><button class="secondary" onclick="bulkDone(true)">選択を投稿済みに</button><button class="secondary" onclick="bulkDone(false)">選択を未投稿に</button></div><div class="row"><button class="danger" onclick="bulkDelete()">選択を削除</button><button class="danger" onclick="clearAll()">全部消去</button></div><p class="help warn">削除前にバックアップを保存してください。削除しても重複防止用の投稿履歴は残ります。</p></div><div id="posts"></div>
 </section>
 </main>
 <script>
 const key="sns-post-manager-v1";
-let posts=[];let currentFilter="all";const selected=new Set();
-try{
-posts=JSON.parse(localStorage.getItem(key)||"[]");
-if(!Array.isArray(posts))posts=[];
-}catch(e){posts=[]}
-function persist(){
-try{
-localStorage.setItem(key,JSON.stringify(posts));
-return true;
-}catch(e){
-alert("保存できませんでした。ブラウザの保存設定や空き容量を確認してください。");
-return false;
-}
-}
+const historyKey="sns-post-manager-history-v1";
+let posts=[];let history=[];let currentFilter="all";const selected=new Set();let pendingImport=null;
+try{posts=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(posts))posts=[]}catch(e){posts=[]}
+try{history=JSON.parse(localStorage.getItem(historyKey)||"[]");if(!Array.isArray(history))history=[]}catch(e){history=[]}
 function norm(t){return String(t||"").normalize("NFKC").replace(/\s+/g,"").replace(/[。、！？!?,.「」『』"'’‘“”・:：;；]/g,"").toLowerCase()}
+function addHistory(entries){
+ const seen=new Set(history.filter(h=>h&&typeof h.content==="string").map(h=>(h.account||"")+"|"+norm(h.content)));
+ for(const p of entries){if(!p||typeof p.content!=="string"||!p.content.trim()||typeof p.account!=="string")continue;
+ const code=p.account+"|"+norm(p.content);
+ if(!seen.has(code)){history.push({account:p.account,content:p.content,date:p.date||""});seen.add(code)}
+ }
+}
+addHistory(posts);
+function persist(){
+ const before=history.slice();
+ try{
+ addHistory(posts);
+ localStorage.setItem(key,JSON.stringify(posts));
+ localStorage.setItem(historyKey,JSON.stringify(history));
+ return true;
+ }catch(e){
+ history=before;
+ alert("保存できませんでした。ブラウザの保存設定や空き容量を確認してください。");
+ return false;
+ }
+}
+function grams(s,n){const out=new Set();for(let i=0;i<=s.length-n;i++)out.add(s.slice(i,i+n));return out}
+function dice(a,b){if(!a.size||!b.size)return 0;let common=0;for(const t of a)if(b.has(t))common++;return 2*common/(a.size+b.size)}
+function similarity(a,b){
+ if(a===b)return 1;
+ if(a.length<6||b.length<6)return 0;
+ const lengthRatio=Math.min(a.length,b.length)/Math.max(a.length,b.length);
+ if(lengthRatio<0.55)return 0;
+ return .4*dice(grams(a,2),grams(b,2))+.6*dice(grams(a,3),grams(b,3));
+}
+function findCollision(item,extra=[],excludeId=null){
+ const n=norm(item.content);if(!n)return null;
+ let best=null;
+ for(const ref of posts.concat(history,extra)){
+ if(!ref||typeof ref.content!=="string"||(excludeId!==null&&ref.id===excludeId))continue;
+ const other=norm(ref.content);
+ if(n===other)return {kind:"exact",ref,score:1};
+ if(ref.account!==item.account)continue;
+ const score=similarity(n,other);
+ if(score>=(n.length<20?.78:.66)&&(!best||score>best.score))best={kind:"similar",ref,score};
+ }
+ return best;
+}
 function savePost(){
-const content=document.getElementById("content").value.trim();
-if(!content){alert("投稿文を入力してください");return}if(posts.some(p=>norm(p.content)===norm(content))){alert("同じ本文がすでに登録されています");return}
-const item={
-id:Date.now()+"-"+Math.random(),
-account:document.getElementById("account").value,
-platform:document.getElementById("platform").value,
-date:document.getElementById("date").value,
-content:content,
-done:false
-};
-posts.push(item);
-if(!persist()){posts.pop();return}
-document.getElementById("content").value="";
-render();
+ const content=document.getElementById("content").value.trim();
+ if(!content){alert("投稿文を入力してください");return}
+ const account=document.getElementById("account").value;
+ const match=findCollision({account,content});
+ if(match?.kind==="exact"){alert("投稿履歴に同じ本文があります。登録しませんでした。");return}
+ if(match?.kind==="similar"&&!confirm("過去に似た文章があります（類似度約"+Math.round(match.score*100)+"%）。\n"+match.ref.content.slice(0,90)+"\n\nそれでも登録しますか？"))return;
+ const item={id:Date.now()+"-"+Math.random(),account,platform:document.getElementById("platform").value,date:document.getElementById("date").value,content,done:false};
+ posts.push(item);
+ if(!persist()){posts.pop();return}
+ document.getElementById("content").value="";
+ render();
 }
 function copyPost(id){
 const p=posts.find(x=>x.id===id);
@@ -150,43 +180,122 @@ persist();
 render();
 }
 function filterPosts(mode){currentFilter=mode;render()}
-function editPost(id){const p=posts.find(x=>x.id===id);if(!p)return;
-const v=prompt("投稿本文を編集",p.content);if(v===null)return;if(!v.trim()){alert("本文は空にできません");return}
-const old=p.content;p.content=v.trim();if(!persist()){p.content=old;return}render()}
+function editPost(id){
+ const p=posts.find(x=>x.id===id);if(!p)return;
+ const v=prompt("投稿本文を編集",p.content);if(v===null)return;
+ const text=v.trim();if(!text){alert("本文は空にできません");return}
+ if(norm(text)!==norm(p.content)){
+ const match=findCollision({account:p.account,content:text},[],p.id);
+ if(match?.kind==="exact"){alert("投稿履歴に同じ本文があります。編集しませんでした。");return}
+ if(match?.kind==="similar"&&!confirm("投稿履歴に似た本文があります。\n"+match.ref.content.slice(0,90)+"\n\n編集を続けますか？"))return;
+ }
+ const old=p.content;p.content=text;if(!persist()){p.content=old;return}render();
+}
 function localDay(date,offset){const d=new Date(date+"T12:00:00");d.setDate(d.getDate()+offset);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
 function generatePrompt(){
 const start=document.getElementById("weekstart").value;if(!start){alert("開始日を選んでください");return}
 const platform=document.getElementById("destination").value;
 const slots=[];for(const account of ["カイ","後輩くん","漫画・恋愛"]){for(let day=0;day<7;day++){for(const time of ["12:00","20:00"]){slots.push({account,platform,date:localDay(start,day)+"T"+time})}}}
-const history=posts.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,100).map(p=>({account:p.account,content:p.content}));
+const recentHistory=history.slice(-150).map(p=>({account:p.account,content:p.content}));
 const instruction="過去投稿との重複防止が最優先です。末尾の過去投稿履歴を確認し、文章の言い換えだけでなく、主張・題材・例・冒頭のフックが似ている投稿も避けてください。毎週、新しい問題提起・視点・具体例を選んでください。次の42枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けの実践的な発信。後輩くんは初心者の成長を描くフィクション企画（架空の実績を現実の事実として断定しない）。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。42個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
-copyText(instruction).then(ok=>{if(ok){alert("生成指示をコピーしました。ChatGPTを開き、貼り付けて送信してください。");window.open("https://chatgpt.com/","_blank","noopener")}else{document.getElementById("jsonImport").value=instruction;alert("コピーできなかったため欄に指示を表示しました。長押ししてコピーしてください。")}})
+const fullInstruction=instruction+"\n過去の投稿履歴（直近最大150件。表現だけでなく題材の重複も避ける）:"+JSON.stringify(recentHistory);
+copyText(fullInstruction).then(ok=>{if(ok){alert("生成指示をコピーしました。ChatGPTを開き、貼り付けて送信してください。");window.open("https://chatgpt.com/","_blank","noopener")}else{document.getElementById("jsonImport").value=fullInstruction;alert("コピーできなかったため欄に指示を表示しました。長押ししてコピーしてください。")}})
 }
 async function copyText(value){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(value);return true}}catch(e){}const t=document.createElement("textarea");t.value=value;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();const ok=document.execCommand("copy");t.remove();return ok}
 function importPosts(){
-const status=document.getElementById("importStatus");let raw=document.getElementById("jsonImport").value.trim();raw=raw.replace(/^\x60{3}(?:json)?\s*/i,"").replace(/\s*\x60{3}$/,"");
-let items;try{items=JSON.parse(raw)}catch(e){status.textContent="JSON形式を確認してください。途中で切れている場合はChatGPTに続きを依頼してください。";return}
-if(!Array.isArray(items)||items.length!==42){status.textContent="42本ちょうどの配列が必要です。現在："+(Array.isArray(items)?items.length:"配列ではありません")+"本";return}
-const allowed=["カイ","後輩くん","漫画・恋愛"];const start=document.getElementById("weekstart").value;const platform=document.getElementById("destination").value;
-if(!start){status.textContent="開始日を選んでください";return}
-const expected=new Set();for(const a of allowed)for(let i=0;i<7;i++)for(const t of ["12:00","20:00"])expected.add(a+"|"+localDay(start,i)+"T"+t);
-const seen=new Set();
-for(const item of items){if(!item||!allowed.includes(item.account)||item.platform!==platform||typeof item.date!=="string"||typeof item.content!=="string"||!item.content.trim()){status.textContent="アカウント・投稿先・日時・本文に不正な値があります。";return}
-const id=item.account+"|"+item.date;if(!expected.has(id)||seen.has(id)){status.textContent="日時・アカウントに重複か指定外の値があります。";return}seen.add(id)}
-const existing=new Set(posts.map(p=>p.account+"|"+p.platform+"|"+p.date));const knownTexts=new Set(posts.map(p=>norm(p.content)));const unique=[];let duplicates=0,repeated=0;for(const p of items){if(existing.has(p.account+"|"+p.platform+"|"+p.date)){duplicates++;continue}const n=norm(p.content);if(knownTexts.has(n)){repeated++;continue}knownTexts.add(n);unique.push(p)}
-if(!confirm(unique.length+"本を登録します。日時重複："+duplicates+"件、本文重複："+repeated+"件をスキップします。よろしいですか？"))return;
-const fresh=unique.map(p=>({id:Date.now()+"-"+Math.random(),account:p.account,platform:p.platform,date:p.date,content:p.content.trim(),done:false}));
-posts.push(...fresh);if(!persist()){posts.splice(posts.length-fresh.length,fresh.length);status.textContent="保存に失敗しました";return}
-status.textContent=fresh.length+"本を登録しました（日時重複："+duplicates+"本、本文重複："+repeated+"本を除外）。意味の近い投稿は目視確認してください。";document.getElementById("jsonImport").value="";render()
+ const status=document.getElementById("importStatus");
+ const area=document.getElementById("importReview");area.replaceChildren();pendingImport=null;
+ const original=document.getElementById("jsonImport").value.trim();
+ let raw=original.replace(/^\x60{3}(?:json)?\s*/i,"").replace(/\s*\x60{3}$/,"");
+ let items;try{items=JSON.parse(raw)}catch(e){status.textContent="JSON形式を確認してください。途中で切れている場合はChatGPTに続きを依頼してください。";return}
+ if(!Array.isArray(items)||items.length!==42){status.textContent="42本ちょうどの配列が必要です。現在："+(Array.isArray(items)?items.length:"配列ではありません")+"本";return}
+ const allowed=["カイ","後輩くん","漫画・恋愛"];const start=document.getElementById("weekstart").value;const platform=document.getElementById("destination").value;
+ if(!start){status.textContent="開始日を選んでください";return}
+ const expected=new Set();for(const a of allowed)for(let i=0;i<7;i++)for(const t of ["12:00","20:00"])expected.add(a+"|"+localDay(start,i)+"T"+t);
+ const seen=new Set();
+ for(const item of items){
+ if(!item||!allowed.includes(item.account)||item.platform!==platform||typeof item.date!=="string"||typeof item.content!=="string"||!item.content.trim()){status.textContent="アカウント・投稿先・日時・本文に不正な値があります。";return}
+ const slot=item.account+"|"+item.date;
+ if(!expected.has(slot)||seen.has(slot)){status.textContent="日時・アカウントに重複か指定外の値があります。";return}
+ seen.add(slot);
+ }
+ const existing=new Set(posts.map(p=>p.account+"|"+p.platform+"|"+p.date));
+ const staged=[];const candidates=[];let duplicateDates=0,exact=0,nearCount=0;
+ for(const item of items){
+ if(existing.has(item.account+"|"+item.platform+"|"+item.date)){duplicateDates++;continue}
+ const match=findCollision(item,staged);
+ if(match?.kind==="exact"){exact++;continue}
+ const near=match?.kind==="similar"?match:null;
+ if(near)nearCount++;
+ const copy={account:item.account,platform:item.platform,date:item.date,content:item.content.trim()};
+ candidates.push({item:copy,near});
+ staged.push(copy);
+ }
+ pendingImport={original,start,platform,candidates,duplicateDates,exact,nearCount};
+ const cleanCount=candidates.length-nearCount;
+ status.textContent="確認結果：新規"+cleanCount+"本・類似"+nearCount+"本・完全一致"+exact+"本・日時重複"+duplicateDates+"本。\n類似投稿は初期状態で登録対象から外しています。";
+ const box=document.createElement("div");box.className="reviewbox";
+ const title=document.createElement("p");title.textContent="登録する投稿を確認してください。類似候補を登録したい場合だけチェックを付けてください。";box.appendChild(title);
+ candidates.forEach((candidate,index)=>{
+ if(!candidate.near)return;
+ const label=document.createElement("label");label.className="reviewitem";
+ const check=document.createElement("input");check.type="checkbox";check.dataset.candidateIndex=String(index);
+ const note=document.createElement("span");
+ note.textContent=candidate.item.account+"／"+candidate.item.date.replace("T"," ")+"　類似度約"+Math.round(candidate.near.score*100)+"%\n新規："+candidate.item.content+"\n過去："+candidate.near.ref.content;
+ note.style.whiteSpace="pre-wrap";
+ label.append(check,note);box.appendChild(label);
+ });
+ const button=document.createElement("button");button.className="primary";button.textContent="確認した投稿を登録";button.onclick=finishImport;box.appendChild(button);
+ area.appendChild(box);
 }
-function exportBackup(){const blob=new Blob([JSON.stringify({version:3,posts},null,2)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sns-posts-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
-async function restoreBackup(e){const file=e.target.files[0];if(!file)return;try{const data=JSON.parse(await file.text());const arr=Array.isArray(data)?data:data.posts;if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("形式が違います");if(!confirm(arr.length+"件を現在の投稿に追加しますか？"))return;const old=[...posts];const ids=new Set(posts.map(p=>String(p.id)));for(const p of arr){if(ids.has(String(p.id)))continue;posts.push({...p,id:p.id||Date.now()+"-"+Math.random()})}if(!persist())posts=old;render()}catch(err){alert("復元できません："+err.message)}finally{e.target.value=""}}
+function finishImport(){
+ if(!pendingImport)return;
+ const area=document.getElementById("importReview");const status=document.getElementById("importStatus");
+ const preview=pendingImport;
+ if(document.getElementById("jsonImport").value.trim()!==preview.original||document.getElementById("weekstart").value!==preview.start||document.getElementById("destination").value!==preview.platform){status.textContent="入力が変更されました。もう一度「③ 内容を確認して一括登録」を押してください。";area.replaceChildren();pendingImport=null;return}
+ const selectedNear=new Set(Array.from(area.querySelectorAll("input[data-candidate-index]:checked"),el=>Number(el.dataset.candidateIndex)));
+ const chosen=preview.candidates.filter((c,i)=>!c.near||selectedNear.has(i)).map(c=>c.item);
+ const count=chosen.length;
+ if(!count){status.textContent="登録する投稿がありません。";return}
+ if(!confirm(count+"本を登録します。除外：類似"+(preview.nearCount-selectedNear.size)+"本、完全一致"+preview.exact+"本、日時重複"+preview.duplicateDates+"本。よろしいですか？"))return;
+ const existing=new Set(posts.map(p=>p.account+"|"+p.platform+"|"+p.date));
+ const added=[];
+ for(const p of chosen){
+ const slot=p.account+"|"+p.platform+"|"+p.date;
+ if(existing.has(slot)||findCollision(p,added)?.kind==="exact")continue;
+ added.push({...p,id:Date.now()+"-"+Math.random(),done:false});existing.add(slot);
+ }
+ const old=posts;posts=posts.concat(added);
+ if(!persist()){posts=old;status.textContent="保存に失敗しました";return}
+ status.textContent=added.length+"本を登録しました（重複"+(chosen.length-added.length)+"本を追加で除外）。類似判定は文章の近さによる目安です。";
+ document.getElementById("jsonImport").value="";area.replaceChildren();pendingImport=null;render();
+}
+function exportBackup(){
+ const blob=new Blob([JSON.stringify({version:4,posts,history},null,2)],{type:"application/json"});
+ const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sns-posts-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function restoreBackup(e){
+ const file=e.target.files[0];if(!file)return;
+ try{
+ const data=JSON.parse(await file.text());const arr=Array.isArray(data)?data:data.posts;
+ if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("形式が違います");
+ const extra=Array.isArray(data.history)?data.history:[];
+ if(!extra.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"))throw Error("履歴の形式が違います");
+ if(!confirm(arr.length+"件の投稿と"+extra.length+"件の履歴を追加しますか？"))return;
+ const oldPosts=posts;const oldHistory=history.slice();const ids=new Set(posts.map(p=>String(p.id)));
+ posts=posts.slice();
+ for(const p of arr){if(ids.has(String(p.id)))continue;posts.push({...p,id:p.id||Date.now()+"-"+Math.random()})}
+ addHistory(extra);if(!persist()){posts=oldPosts;history=oldHistory}
+ render();
+ }catch(err){alert("復元できません："+err.message)}
+ finally{e.target.value=""}
+}
 function visiblePosts(){return posts.filter(p=>currentFilter==="all"||(currentFilter==="done"?p.done:!p.done))}
 function updateSelected(){document.getElementById("selectedCount").textContent="選択中："+selected.size+"件"}
 function selectVisible(on){for(const p of visiblePosts()){if(on)selected.add(String(p.id));else selected.delete(String(p.id))}render()}
 function bulkDone(done){const targets=posts.filter(p=>selected.has(String(p.id)));if(!targets.length){alert("投稿を選択してください");return}if(!confirm(targets.length+"件を変更しますか？"))return;const old=targets.map(p=>p.done);targets.forEach(p=>p.done=done);if(!persist())targets.forEach((p,i)=>p.done=old[i]);selected.clear();render()}
 function bulkDelete(){const n=posts.filter(p=>selected.has(String(p.id))).length;if(!n){alert("投稿を選択してください");return}if(!confirm(n+"件を削除しますか？元に戻せません。"))return;const old=posts;posts=posts.filter(p=>!selected.has(String(p.id)));if(!persist())posts=old;else selected.clear();render()}
-function clearAll(){if(!posts.length){alert("削除する投稿がありません");return}if(!confirm("全"+posts.length+"件を消去します。バックアップを保存しましたか？"))return;if(prompt("本当に全部消去する場合は「全削除」と入力")!=="全削除")return;const old=posts;posts=[];if(!persist())posts=old;else selected.clear();render()}
+function clearAll(){if(!posts.length){alert("削除する投稿がありません");return}if(!confirm("全"+posts.length+"件を投稿一覧から消去します。重複防止履歴は残ります。バックアップを保存しましたか？"))return;if(prompt("本当に全部消去する場合は「全削除」と入力")!=="全削除")return;const old=posts;posts=[];if(!persist())posts=old;else selected.clear();render()}
 function render(){
 const root=document.getElementById("posts");
 root.replaceChildren();updateSelected();
