@@ -54,11 +54,25 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .filter-reset{min-height:44px}
 #importStatus{scroll-margin-top:15px}
 @media(max-width:360px){.today-actions{grid-template-columns:1fr 1fr}.today-actions button:last-child{grid-column:1/-1}}
+
+.import-preview{margin-top:12px;background:#f8fafc;border:1px solid #d8e0eb;border-radius:10px;padding:12px}
+.import-preview[hidden]{display:none}
+.import-stats{font-size:14px;line-height:1.7;white-space:pre-wrap}
+.import-scroll{max-height:300px;overflow:auto;margin:8px 0}
+.import-line{border-bottom:1px solid #d8e0eb;padding:10px 0;font-size:13px}
+.import-line span{color:#52657c;font-size:12px}
+.import-line p{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0}
+.import-step{font-size:13px;color:#516177;line-height:1.6}
+.import-status{font-size:14px;color:#205a38;white-space:pre-wrap;line-height:1.6}
+.import-status.error{color:#a22}
+.import-buttons{display:flex;gap:8px}
+.import-buttons button{flex:1;min-height:46px}
+#importFile{font-size:14px}
 </style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.3</h1>
+<h1>SNS投稿管理 Ver.3.4</h1>
 <p>毎日の投稿作業を5分以内に</p>
 </header>
 <main>
@@ -98,6 +112,17 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <label>投稿本文</label>
 <textarea id="content" placeholder="投稿文を入力してください"></textarea>
 <button class="primary" onclick="savePost()">投稿を保存</button>
+</section>
+<section class="card" id="historyImporter">
+<h2>📥 X・Threadsの過去投稿を取り込む</h2>
+<p class="import-step">公式アーカイブ（ZIP）または投稿データ（JSON・JS・CSV・TXT）を選び、プレビューを確認してから登録します。<b>投稿予定には追加されません。</b> ファイル内容は端末内で読み取ります。</p>
+<label for="importSource">投稿元SNS</label><select id="importSource"><option value="X">X</option><option value="Threads">Threads</option></select>
+<label for="importAccount">履歴を保存する企画</label><select id="importAccount"><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option></select>
+<label for="importFile">過去投稿データのファイル</label>
+<input id="importFile" type="file" accept=".zip,.json,.js,.csv,.txt,application/zip,application/json,text/plain,text/csv" onchange="prepareHistoryImport()">
+<p class="import-step">XのZIPが大きい場合は、解凍した「data/tweets.js」を選ぶと軽く処理できます。ZIPの読み込みには初回だけ外部のZIP展開用ライブラリを取得します。DM・いいね・プロフィール等のファイルは取り込みません。</p>
+<div id="importStatus34" role="status" class="import-status"></div>
+<div id="importPreview34" class="import-preview" hidden></div>
 </section>
 <section class="card">
 <h2>データのバックアップ</h2>
@@ -508,5 +533,6 @@ function checkNotifications() {
 setInterval(checkNotifications, 15000);
 checkNotifications();
 </script>
+<script src="import34.js?v=1"></script>
 </body>
 </html>
