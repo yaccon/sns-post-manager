@@ -172,6 +172,7 @@ function commitHistoryImport(){
  try{
   localStorage.setItem(historyKey,JSON.stringify(updated));history=updated;
   if(typeof refreshBackupStatus==="function")refreshBackupStatus();
+  if(typeof refreshStorageUsage342==="function")refreshStorageUsage342();
   import34Status("保存しました："+(updated.length-old.length)+"件。投稿予定一覧には追加されていません。バックアップを保存しておくと安心です。");
   document.getElementById("importPreview34").hidden=true;
   import34Rows=[];import34Snapshot=null;document.getElementById("importFile").value="";

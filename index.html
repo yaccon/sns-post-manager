@@ -68,11 +68,28 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .import-buttons{display:flex;gap:8px}
 .import-buttons button{flex:1;min-height:46px}
 #importFile{font-size:14px}
+
+/* Ver.3.4.2: paste input and app data usage */
+.paste342{border:1px solid #d8e3ef;background:#f9fbff;border-radius:12px;padding:14px;margin:15px 0}
+.paste342 h3{font-size:15px;margin:2px 0 8px}
+.paste342 textarea{min-height:128px;line-height:1.5}
+.paste342 .row{margin-top:8px}
+.paste342 .row button{min-height:48px}
+.paste342 .row .primary,.paste342 .row .secondary{margin-top:0}
+.paste342 .paste-tip342{font-size:12px;line-height:1.7;color:#536174}
+.paste-preview342{margin-top:10px}
+.paste-preview342[hidden]{display:none}
+.paste-samples342{max-height:260px;overflow:auto;margin:10px 0}
+.paste-entry342{border-top:1px solid #dbe2ec;padding:9px 0}
+.paste-entry342 strong{font-size:12px;color:#334155}
+.paste-entry342 p{font-size:13px;margin:5px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.paste-error342{color:#a22!important}
+.storage342{white-space:pre-wrap;line-height:1.8;font-size:13px;color:#334155;background:#f3f6fa;border-radius:10px;padding:11px;margin-top:10px}
 </style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.4.1</h1>
+<h1>SNS投稿管理 Ver.3.4.2</h1>
 <p>毎日の投稿作業を5分以内に</p>
 </header>
 <main>
@@ -126,11 +143,29 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </section>
 <section class="card">
 <h2>データのバックアップ</h2>
+<div class="paste342" id="historyPasteCard342">
+<h3>📋 ChatGPTの過去投稿を直接貼り付け</h3>
+<p class="paste-tip342">JSON配列、過去に保存したバックアップJSON、または1本の通常の文章に対応します。ファイルをダウンロードする必要はありません。</p>
+<label for="pasteAccount342">企画（本文に企画指定がない場合）</label>
+<select id="pasteAccount342"><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option></select>
+<label for="pasteHistory342">過去投稿の文章・JSON</label>
+<textarea id="pasteHistory342" placeholder='[{"account":"カイ","content":"過去の投稿文"},{"account":"後輩くん","content":"別の投稿文"}]'></textarea>
+<div class="row">
+<button class="secondary" type="button" onclick="pasteClipboardHistory342()">📋 クリップボードから貼り付け</button>
+<button class="primary" type="button" onclick="previewPastedHistory342()">① 内容を確認</button>
+</div>
+<p class="paste-tip342">自動貼り付けできない場合は入力欄を長押しして「ペースト」。履歴のみに保存し、投稿予定には追加しません。実際に投稿済みかどうかは判定しません。</p>
+<p id="pasteStatus342" class="status" role="status"></p>
+<div id="pastePreview342" class="paste-preview342" hidden></div>
+</div>
+
 <p class="help">投稿一覧と重複防止履歴を一緒に保存します。機種変更やブラウザデータ消去に備えて、定期的に保存してください。旧Ver.1形式も復元できます。</p>
 <div class="row"><button class="secondary" onclick="exportBackup()">バックアップを保存</button><button class="secondary" onclick="document.getElementById('restoreFile').click()">バックアップを復元</button></div>
 <input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)">
 <p id="backupHistoryCount" class="help" aria-live="polite">履歴件数を確認中...</p>
 <p id="backupStatus" class="status" role="status" aria-live="polite"></p>
+<h3 style="font-size:15px;margin:14px 0 8px">保存容量の確認</h3>
+<div id="storageUsage342" class="storage342" aria-live="polite">保存容量を確認中...</div>
 </section>
 <section class="card">
 <h2>投稿一覧</h2>
@@ -467,6 +502,7 @@ function bulkDelete(){const n=posts.filter(p=>selected.has(String(p.id))).length
 function clearAll(){if(!posts.length){alert("削除する投稿がありません");return}if(!confirm("全"+posts.length+"件を投稿一覧から消去します。重複防止履歴は残ります。バックアップを保存しましたか？"))return;if(prompt("本当に全部消去する場合は「全削除」と入力")!=="全削除")return;const old=posts;posts=[];if(!persist())posts=old;else selected.clear();render()}
 function render(){
 renderToday();
+if(typeof refreshStorageUsage342==="function")refreshStorageUsage342();
 const root=document.getElementById("posts");
 root.replaceChildren();updateSelected();
 const matches=visiblePosts();
@@ -556,5 +592,6 @@ setInterval(checkNotifications, 15000);
 checkNotifications();
 </script>
 <script src="import34.js?v=1"></script>
+<script src="history342.js?v=1"></script>
 </body>
 </html>
