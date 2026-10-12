@@ -71,6 +71,7 @@ function import34Csv(source){
 }
 function import34Parse(text,fileName,source){
  const name=fileName.toLowerCase();
+ if(source==="Threads"&&/^(?:inbox|messages?|direct_messages?|conversations?|contacts?|likes?|followers?|following|comments?|stories?|profile)(?:[-_.]|$)/i.test(name.split("/").pop()))throw Error("投稿以外のファイルは読み込めません。Threadsの投稿履歴を選択してください");
  if(name.endsWith(".csv"))return import34Csv(text);
  if(name.endsWith(".txt"))return text.split(/\r?\n/).map(t=>import34Entry(t,"")).filter(Boolean);
  let raw=text.trim().replace(/^\ufeff/,"");
