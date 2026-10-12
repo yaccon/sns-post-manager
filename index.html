@@ -28,11 +28,12 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .done{opacity:.55}
 .empty{color:#777;font-size:14px}
 .help{font-size:13px;color:#536174;line-height:1.7}.secondary{background:#e9eef8;color:#173e76;width:100%;margin-top:9px}.danger{background:#fff1f1;color:#a22}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.status{font-size:13px;white-space:pre-wrap;color:#176447;margin-top:10px}.smallarea{min-height:100px}.pill{background:#eef4ff;border-radius:8px;padding:9px;font-size:13px;margin:8px 0}
-.selectpost{display:flex;align-items:center;gap:10px;font-size:14px}.selectpost input{width:24px;height:24px}.bulkbar{border:1px solid #ddd;padding:10px;border-radius:10px;margin:12px 0}.bulkbar button{min-height:44px}.danger{background:#ffe4e4;color:#a22}.warn{color:#a22}</style>
+.selectpost{display:flex;align-items:center;gap:10px;font-size:14px}.selectpost input{width:24px;height:24px}.bulkbar{border:1px solid #ddd;padding:10px;border-radius:10px;margin:12px 0}.bulkbar button{min-height:44px}.danger{background:#ffe4e4;color:#a22}.warn{color:#a22}.v32-review{margin-top:12px;border:1px solid #d3dce8;border-radius:10px;padding:12px;background:#f8fafc}.v32-review[hidden]{display:none}.v32-line{padding:12px 0;border-bottom:1px solid #dce3ea}.v32-line:last-child{border:0}.v32-line label{display:flex;align-items:center;gap:10px}.v32-line input{width:24px;height:24px;flex-shrink:0}.v32-line p{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}.v32-warn{color:#a22;font-size:13px}.v32-scroll{max-height:400px;overflow-y:auto}.v32-review button{min-height:44px}
+</style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.1</h1>
+<h1>SNS投稿管理 Ver.3.2</h1>
 <p>毎日の投稿作業を5分以内に</p>
 </header>
 <main>
@@ -45,7 +46,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <p class="help">ChatGPTに貼り付けて送信してください。返答はJSON形式で受け取り、下の欄に貼り付けます。自動送信やAPI呼び出しは行いません。</p>
 <label for="jsonImport">② ChatGPTの生成結果（JSON）</label><textarea class="smallarea" id="jsonImport" placeholder='[{"account":"カイ","date":"2026-10-12T12:00","content":"投稿文"}, ...]'></textarea>
 <button class="primary" onclick="importPosts()">③ 内容を確認して一括登録</button>
-<p class="status" id="importStatus" role="status"></p>
+<p class="status" id="importStatus" role="status"></p><div id="v32-review" class="v32-review" hidden></div>
 </section>
 <section class="card">
 <h2>新しい投稿</h2>
@@ -68,14 +69,14 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </section>
 <section class="card">
 <h2>データのバックアップ</h2>
-<p class="help">機種変更やブラウザデータ消去に備えて、定期的に保存してください。旧Ver.1の投稿も同じ保存領域から読み込みます。</p>
+<p class="help">機種変更やブラウザデータ消去に備えて、定期的に保存してください。旧Ver.1の投稿も同じ保存領域から読み込みます。重複防止用の履歴もバックアップします。</p><p class="help" id="v32-history-count">投稿履歴を読み込み中</p><p class="help">投稿一覧から消した文章も履歴に残ります。ブラウザのデータ消去では両方消えるためバックアップを保管してください。</p>
 <div class="row"><button class="secondary" onclick="exportBackup()">バックアップを保存</button><button class="secondary" onclick="document.getElementById('restoreFile').click()">バックアップを復元</button></div>
 <input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)">
 </section>
 <section class="card">
 <h2>投稿一覧</h2>
 <div class="row"><button class="secondary" onclick="filterPosts('all')">すべて</button><button class="secondary" onclick="filterPosts('pending')">未投稿</button><button class="secondary" onclick="filterPosts('done')">投稿済み</button></div>
-<div class="bulkbar"><div class="row"><button class="secondary" onclick="selectVisible(true)">表示中を全選択</button><button class="secondary" onclick="selectVisible(false)">選択解除</button></div><p id="selectedCount">選択中：0件</p><div class="row"><button class="secondary" onclick="bulkDone(true)">選択を投稿済みに</button><button class="secondary" onclick="bulkDone(false)">選択を未投稿に</button></div><div class="row"><button class="danger" onclick="bulkDelete()">選択を削除</button><button class="danger" onclick="clearAll()">全部消去</button></div><p class="help warn">削除前にバックアップを保存してください。</p></div><div id="posts"></div>
+<div class="bulkbar"><div class="row"><button class="secondary" onclick="selectVisible(true)">表示中を全選択</button><button class="secondary" onclick="selectVisible(false)">選択解除</button></div><p id="selectedCount">選択中：0件</p><div class="row"><button class="secondary" onclick="bulkDone(true)">選択を投稿済みに</button><button class="secondary" onclick="bulkDone(false)">選択を未投稿に</button></div><div class="row"><button class="danger" onclick="bulkDelete()">選択を削除</button><button class="danger" onclick="clearAll()">一覧を全部消去</button></div><p class="help warn">削除前にバックアップを保存してください。</p></div><div id="posts"></div>
 </section>
 </main>
 <script>
@@ -267,6 +268,6 @@ function checkNotifications() {
 
 setInterval(checkNotifications, 15000);
 checkNotifications();
-</script>
+</script><script src="ver32.js?v=1"></script>
 </body>
 </html>
