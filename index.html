@@ -72,7 +72,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.4</h1>
+<h1>SNS投稿管理 Ver.3.4.1</h1>
 <p>毎日の投稿作業を5分以内に</p>
 </header>
 <main>
@@ -129,6 +129,8 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <p class="help">投稿一覧と重複防止履歴を一緒に保存します。機種変更やブラウザデータ消去に備えて、定期的に保存してください。旧Ver.1形式も復元できます。</p>
 <div class="row"><button class="secondary" onclick="exportBackup()">バックアップを保存</button><button class="secondary" onclick="document.getElementById('restoreFile').click()">バックアップを復元</button></div>
 <input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)">
+<p id="backupHistoryCount" class="help" aria-live="polite">履歴件数を確認中...</p>
+<p id="backupStatus" class="status" role="status" aria-live="polite"></p>
 </section>
 <section class="card">
 <h2>投稿一覧</h2>
@@ -349,23 +351,42 @@ function exportBackup(){
  const blob=new Blob([JSON.stringify({version:4,posts,history},null,2)],{type:"application/json"});
  const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sns-posts-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
+function refreshBackupStatus(){
+ const label=document.getElementById("backupHistoryCount");
+ if(label)label.textContent="保存されている重複防止履歴："+history.length+"件 ／ 投稿予定："+posts.length+"件";
+}
 async function restoreBackup(e){
- const file=e.target.files[0];if(!file)return;
+ const file=e.target.files[0];
+ if(!file)return;
+ const status=document.getElementById("backupStatus");
+ status.textContent="";
  try{
- const data=JSON.parse(await file.text());const arr=Array.isArray(data)?data:data.posts;
- if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("形式が違います");
- const extra=Array.isArray(data.history)?data.history:[];
- if(!extra.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"))throw Error("履歴の形式が違います");
- if(!confirm(arr.length+"件の投稿と"+extra.length+"件の履歴を追加しますか？"))return;
- const oldPosts=posts;const oldHistory=history.slice();const ids=new Set(posts.map(p=>String(p.id)));
- posts=posts.slice();
- for(const p of arr){if(ids.has(String(p.id)))continue;posts.push({...p,id:p.id||Date.now()+"-"+Math.random()})}
- addHistory(extra);if(!persist()){posts=oldPosts;history=oldHistory}
- render();
- }catch(err){alert("復元できません："+err.message)}
+  const data=JSON.parse(await file.text());
+  const arr=Array.isArray(data)?data:data?.posts;
+  if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("投稿データの形式が違います");
+  const extra=Array.isArray(data.history)?data.history:[];
+  if(!extra.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"))throw Error("履歴の形式が違います");
+  if(!confirm(arr.length+"件の投稿と"+extra.length+"件の履歴を追加しますか？")){status.textContent="復元をキャンセルしました。";return}
+  const oldPosts=posts,oldHistory=history.slice(),ids=new Set(posts.map(p=>String(p.id)));
+  posts=posts.slice();
+  for(const p of arr){
+   if(ids.has(String(p.id)))continue;
+   const id=p.id||Date.now()+"-"+Math.random();
+   posts.push({...p,id});ids.add(String(id));
+  }
+  addHistory(extra);
+  const addedPosts=posts.length-oldPosts.length,addedHistory=history.length-oldHistory.length;
+  if(!persist()){
+   posts=oldPosts;history=oldHistory;
+   status.textContent="復元できませんでした。データの保存に失敗しました。";
+   refreshBackupStatus();return;
+  }
+  render();
+  refreshBackupStatus();
+  status.textContent="復元完了：投稿予定 "+addedPosts+"件、過去投稿履歴 "+addedHistory+"件を追加しました。履歴合計 "+history.length+"件。";
+ }catch(err){status.textContent="復元できません："+err.message;alert(status.textContent)}
  finally{e.target.value=""}
 }
-
 function v33LocalToday(){
  const d=new Date();
  return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
@@ -495,6 +516,7 @@ root.appendChild(div);
 }
 document.getElementById("weekstart").value=localDay(new Date().toLocaleDateString("sv-SE"),1);
 render();
+refreshBackupStatus();
 
 const notified = new Set();
 
