@@ -28,14 +28,46 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .done{opacity:.55}
 .empty{color:#777;font-size:14px}
 .help{font-size:13px;color:#536174;line-height:1.7}.secondary{background:#e9eef8;color:#173e76;width:100%;margin-top:9px}.danger{background:#fff1f1;color:#a22}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.status{font-size:13px;white-space:pre-wrap;color:#176447;margin-top:10px}.smallarea{min-height:100px}.pill{background:#eef4ff;border-radius:8px;padding:9px;font-size:13px;margin:8px 0}
-.selectpost{display:flex;align-items:center;gap:10px;font-size:14px}.selectpost input{width:24px;height:24px}.bulkbar{border:1px solid #ddd;padding:10px;border-radius:10px;margin:12px 0}.bulkbar button{min-height:44px}.danger{background:#ffe4e4;color:#a22}.warn{color:#a22}.reviewitem{display:flex;gap:10px;align-items:flex-start;border-top:1px solid #ddd;padding:12px 0;font-size:13px;font-weight:normal}.reviewitem input{width:24px;min-width:24px;height:24px;margin:2px 0}.reviewitem span{line-height:1.6;overflow-wrap:anywhere}.reviewbox{margin-top:12px;padding:12px;background:#fff9ed;border-radius:10px}.reviewbox button{min-height:44px}</style>
+.selectpost{display:flex;align-items:center;gap:10px;font-size:14px}.selectpost input{width:24px;height:24px}.bulkbar{border:1px solid #ddd;padding:10px;border-radius:10px;margin:12px 0}.bulkbar button{min-height:44px}.danger{background:#ffe4e4;color:#a22}.warn{color:#a22}.reviewitem{display:flex;gap:10px;align-items:flex-start;border-top:1px solid #ddd;padding:12px 0;font-size:13px;font-weight:normal}.reviewitem input{width:24px;min-width:24px;height:24px;margin:2px 0}.reviewitem span{line-height:1.6;overflow-wrap:anywhere}.reviewbox{margin-top:12px;padding:12px;background:#fff9ed;border-radius:10px}.reviewbox button{min-height:44px}
+/* Ver.3.3: iPhone-first daily posting workflow */
+.today-card{border:2px solid #dbeafe}
+.today-summary{background:#eef4ff;color:#173e76;padding:11px 12px;border-radius:10px;font-size:14px;font-weight:700;margin-bottom:8px}
+.today-date{color:#586a83;font-size:13px;font-weight:500;margin-left:6px}
+.today-post{padding:13px 0;border-bottom:1px solid #e1e7ef}
+.today-post:last-child{border-bottom:0}
+.today-post.is-done{opacity:.7}
+.today-meta{font-size:13px;font-weight:700;color:#334155;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.today-time{font-size:19px;font-weight:800;color:#1d4ed8}
+.today-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;margin:10px 0 12px;font-size:15px}
+.today-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.today-actions button{font-size:13px;padding:11px 5px;min-height:46px;overflow-wrap:anywhere}
+.today-actions .primary{margin-top:0}
+.today-actions .go{background:#e8eef9;color:#173e76}
+.today-actions .mark{background:#e6f6eb;color:#166534}
+.today-actions .revert{background:#eef2f7;color:#334155}
+.today-blank{color:#586a83;font-size:14px;padding:14px 0}
+.list-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin:12px 0}
+.list-filters label{margin:0;font-size:12px;font-weight:700}
+.list-filters select,.list-filters input{margin-top:5px;min-height:45px;font-size:16px}
+.list-filters .search{grid-column:1/-1}
+.list-helper{font-size:12px;color:#586a83;margin:7px 0}
+.filter-reset{min-height:44px}
+#importStatus{scroll-margin-top:15px}
+@media(max-width:360px){.today-actions{grid-template-columns:1fr 1fr}.today-actions button:last-child{grid-column:1/-1}}
+</style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.2</h1>
+<h1>SNS投稿管理 Ver.3.3</h1>
 <p>毎日の投稿作業を5分以内に</p>
 </header>
 <main>
+<section class="card today-card" id="todaySection">
+<h2>📌 今日の投稿 <span id="todayDate" class="today-date"></span></h2>
+<div id="todaySummary" class="today-summary" role="status"></div>
+<div id="todayPosts"></div>
+<p class="help">①本文コピー → ②投稿先を開く → 投稿後に③投稿済み。送信は自分で確認して行います。</p>
+</section>
 <section class="card">
 <h2>✨ AIで1週間分の投稿を作る</h2>
 <div class="pill">カイ・後輩くん・漫画恋愛 各14本 ／ 合計42本<br>毎日12:00・20:00 ／ API追加料金0円</div>
@@ -44,6 +76,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <button class="primary" onclick="generatePrompt()">① 42本の生成指示をコピーしてChatGPTを開く</button>
 <p class="help">ChatGPTに貼り付けて送信してください。返答はJSON形式で受け取り、下の欄に貼り付けます。自動送信やAPI呼び出しは行いません。</p>
 <label for="jsonImport">② ChatGPTの生成結果（JSON）</label><textarea class="smallarea" id="jsonImport" placeholder='[{"account":"カイ","date":"2026-10-12T12:00","content":"投稿文"}, ...]'></textarea>
+<button class="secondary" onclick="pasteGeneratedJson()">📋 クリップボードからJSONを貼り付ける</button>
 <button class="primary" onclick="importPosts()">③ 内容を確認して一括登録</button>
 <p class="status" id="importStatus" role="status"></p><div id="importReview" aria-live="polite"></div>
 </section>
@@ -74,6 +107,23 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </section>
 <section class="card">
 <h2>投稿一覧</h2>
+<div class="list-filters">
+<label for="listAccount">アカウント
+<select id="listAccount" onchange="changeListFilters()"><option value="all">すべて</option><option value="カイ">カイ</option><option value="後輩くん">後輩くん</option><option value="漫画・恋愛">漫画・恋愛</option></select>
+</label>
+<label for="listPlatform">投稿先
+<select id="listPlatform" onchange="changeListFilters()"><option value="all">すべて</option><option value="X">X</option><option value="Threads">Threads</option></select>
+</label>
+<label for="listPeriod">期間
+<select id="listPeriod" onchange="changeListFilters()"><option value="all">すべて</option><option value="today">今日</option></select>
+</label>
+<label for="listSearch" class="search">本文検索
+<input id="listSearch" type="search" placeholder="投稿文のキーワード" oninput="changeListFilters()">
+</label>
+</div>
+<p class="list-helper">下の「すべて・未投稿・投稿済み」と組み合わせて絞り込めます。</p>
+<button type="button" class="secondary filter-reset" onclick="resetListFilters()">絞り込みを解除する</button>
+<p id="listCount" class="list-helper" aria-live="polite"></p>
 <div class="row"><button class="secondary" onclick="filterPosts('all')">すべて</button><button class="secondary" onclick="filterPosts('pending')">未投稿</button><button class="secondary" onclick="filterPosts('done')">投稿済み</button></div>
 <div class="bulkbar"><div class="row"><button class="secondary" onclick="selectVisible(true)">表示中を全選択</button><button class="secondary" onclick="selectVisible(false)">選択解除</button></div><p id="selectedCount">選択中：0件</p><div class="row"><button class="secondary" onclick="bulkDone(true)">選択を投稿済みに</button><button class="secondary" onclick="bulkDone(false)">選択を未投稿に</button></div><div class="row"><button class="danger" onclick="bulkDelete()">選択を削除</button><button class="danger" onclick="clearAll()">全部消去</button></div><p class="help warn">削除前にバックアップを保存してください。削除しても重複防止用の投稿履歴は残ります。</p></div><div id="posts"></div>
 </section>
@@ -290,15 +340,91 @@ async function restoreBackup(e){
  }catch(err){alert("復元できません："+err.message)}
  finally{e.target.value=""}
 }
-function visiblePosts(){return posts.filter(p=>currentFilter==="all"||(currentFilter==="done"?p.done:!p.done))}
+
+function v33LocalToday(){
+ const d=new Date();
+ return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+}
+function changeListFilters(){
+ selected.clear();
+ render();
+}
+function resetListFilters(){
+ document.getElementById("listAccount").value="all";
+ document.getElementById("listPlatform").value="all";
+ document.getElementById("listPeriod").value="all";
+ document.getElementById("listSearch").value="";
+ currentFilter="all";selected.clear();render();
+}
+async function pasteGeneratedJson(){
+ const input=document.getElementById("jsonImport");
+ try{
+  if(!navigator.clipboard||typeof navigator.clipboard.readText!=="function")throw Error("not-supported");
+  const value=await navigator.clipboard.readText();
+  if(!value.trim()){alert("コピーした文章が見つかりません。ChatGPTの生成結果をコピーしてください。");input.focus();return}
+  input.value=value;input.focus();
+  document.getElementById("importStatus").textContent="生成結果を貼り付けました。「③ 内容を確認して一括登録」に進んでください。";
+ }catch(e){
+  input.focus();
+  alert("このブラウザでは自動貼り付けが利用できない場合があります。入力欄を長押しして「ペースト」を選んでください。");
+ }
+}
+function visiblePosts(){
+ const account=document.getElementById("listAccount").value;
+ const platform=document.getElementById("listPlatform").value;
+ const period=document.getElementById("listPeriod").value;
+ const search=document.getElementById("listSearch").value.trim().toLocaleLowerCase();
+ const today=v33LocalToday();
+ return posts.filter(p=>
+   (currentFilter==="all"||(currentFilter==="done"?p.done:!p.done))&&
+   (account==="all"||p.account===account)&&
+   (platform==="all"||p.platform===platform)&&
+   (period!=="today"||(typeof p.date==="string"&&p.date.slice(0,10)===today))&&
+   (!search||String(p.content||"").toLocaleLowerCase().includes(search))
+ );
+}
+function renderToday(){
+ const today=v33LocalToday(),d=new Date();
+ document.getElementById("todayDate").textContent=(d.getMonth()+1)+"月"+d.getDate()+"日";
+ const root=document.getElementById("todayPosts");root.replaceChildren();
+ const todays=posts.filter(p=>typeof p.date==="string"&&p.date.slice(0,10)===today)
+  .sort((a,b)=>Number(a.done)-Number(b.done)||String(a.date).localeCompare(String(b.date))||String(a.account).localeCompare(String(b.account)));
+ const pending=todays.filter(p=>!p.done).length;
+ const completed=todays.length-pending;
+ document.getElementById("todaySummary").textContent="未投稿："+pending+"件　／　投稿済み："+completed+"件";
+ if(!todays.length){
+  const empty=document.createElement("p");empty.className="today-blank";
+  empty.textContent="今日の投稿予定はありません。登録済みの別の日付の投稿は下の一覧で確認できます。";
+  root.appendChild(empty);return;
+ }
+ for(const p of todays){
+  const block=document.createElement("div");block.className="today-post"+(p.done?" is-done":"");
+  const meta=document.createElement("div");meta.className="today-meta";
+  const time=document.createElement("span");time.className="today-time";time.textContent=p.date.slice(11,16)||"時刻未設定";
+  const account=document.createElement("span");account.textContent=p.account+" ／ "+p.platform+" ／ "+(p.done?"投稿済み":"未投稿");
+  meta.append(time,account);
+  const body=document.createElement("div");body.className="today-body";body.textContent=p.content;
+  const actions=document.createElement("div");actions.className="today-actions";
+  const copy=document.createElement("button");copy.className="primary";copy.textContent="① 本文コピー";copy.onclick=()=>copyPost(p.id);
+  const open=document.createElement("button");open.className="go";open.textContent="② "+p.platform+"を開く";open.onclick=()=>openPlatform(p.id);
+  const mark=document.createElement("button");mark.className=p.done?"revert":"mark";
+  mark.textContent=p.done?"③ 未投稿に戻す":"③ 投稿済みにする";
+  mark.onclick=()=>toggleDone(p.id);
+  actions.append(copy,open,mark);block.append(meta,body,actions);root.appendChild(block);
+ }
+}
+
 function updateSelected(){document.getElementById("selectedCount").textContent="選択中："+selected.size+"件"}
 function selectVisible(on){for(const p of visiblePosts()){if(on)selected.add(String(p.id));else selected.delete(String(p.id))}render()}
 function bulkDone(done){const targets=posts.filter(p=>selected.has(String(p.id)));if(!targets.length){alert("投稿を選択してください");return}if(!confirm(targets.length+"件を変更しますか？"))return;const old=targets.map(p=>p.done);targets.forEach(p=>p.done=done);if(!persist())targets.forEach((p,i)=>p.done=old[i]);selected.clear();render()}
 function bulkDelete(){const n=posts.filter(p=>selected.has(String(p.id))).length;if(!n){alert("投稿を選択してください");return}if(!confirm(n+"件を削除しますか？元に戻せません。"))return;const old=posts;posts=posts.filter(p=>!selected.has(String(p.id)));if(!persist())posts=old;else selected.clear();render()}
 function clearAll(){if(!posts.length){alert("削除する投稿がありません");return}if(!confirm("全"+posts.length+"件を投稿一覧から消去します。重複防止履歴は残ります。バックアップを保存しましたか？"))return;if(prompt("本当に全部消去する場合は「全削除」と入力")!=="全削除")return;const old=posts;posts=[];if(!persist())posts=old;else selected.clear();render()}
 function render(){
+renderToday();
 const root=document.getElementById("posts");
 root.replaceChildren();updateSelected();
+const matches=visiblePosts();
+document.getElementById("listCount").textContent="表示中："+matches.length+"件 ／ 登録済み："+posts.length+"件";
 if(!posts.length){
 const empty=document.createElement("p");
 empty.className="empty";
@@ -306,9 +432,14 @@ empty.textContent="まだ投稿がありません";
 root.appendChild(empty);
 return;
 }
-const sorted=visiblePosts().sort((a,b)=>
+const sorted=matches.sort((a,b)=>
 Number(a.done)-Number(b.done)||
 (a.date||"9999").localeCompare(b.date||"9999"));
+if(!sorted.length){
+ const empty=document.createElement("p");empty.className="empty";
+ empty.textContent="条件に一致する投稿はありません。絞り込みを解除すると全投稿を確認できます。";
+ root.appendChild(empty);return;
+}
 sorted.forEach(p=>{
 const div=document.createElement("div");
 div.className="post"+(p.done?" done":"");
