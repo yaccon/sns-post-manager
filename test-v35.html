@@ -89,13 +89,15 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </head>
 <body>
 <header>
-<h1>🧪 SNS投稿管理 Ver.3.5.1 テスト専用</h1>
+<h1>🧪 SNS投稿管理 Ver.3.5.2 テスト専用</h1>
 <p>通常アプリとは保存データを分離しています。ここには実際の投稿を入力しないでください。</p>
 </header>
-<dialog id="copyDialog35" class="copy-dialog35" aria-label="コピーする文章"><h2 id="copyTitle35">本文コピー</h2><p class="help" id="copyHint35">コピーできないときは、本文を長押しして「すべて選択」→「コピー」を選んでください。</p><textarea id="copyField35" readonly aria-label="コピーする文章"></textarea><div class="row"><button type="button" class="primary" onclick="retryCopy35()">もう一度コピー</button><button type="button" class="secondary" onclick="closeCopy35()">閉じる</button></div><a id="chatLink35" href="https://chatgpt.com/" target="_blank" rel="noopener" style="display:none;font-weight:bold;padding:15px 0">ChatGPTを開く ↗</a></dialog><main>
+<dialog id="copyDialog35" class="copy-dialog35" aria-label="コピーする文章"><h2 id="copyTitle35">本文コピー</h2><p class="help" id="copyHint35">コピーを押してからメモ等に貼り付けて確認してください。</p><textarea id="copyField35" readonly aria-label="コピーする文章"></textarea><div class="row"><button type="button" class="primary" onclick="retryCopy35()">もう一度コピー</button><button type="button" class="secondary" onclick="closeCopy35()">元の画面に戻る</button></div><a id="chatLink35" href="https://chatgpt.com/" target="_blank" rel="noopener" style="display:none;font-weight:bold;padding:15px 0">ChatGPTを開く ↗</a></dialog><main>
 <section class="card" style="border:2px solid #257b50"><strong>✅ このページは動作テスト専用です</strong><p class="help">通常版の投稿や履歴は表示・変更しません。ここでの登録はテスト用です。実在の投稿や個人情報は入力せず、試験用の文章でお試しください。</p></section>
 <section class="card today-card" id="todaySection">
 <h2>📌 今日の投稿 <span id="todayDate" class="today-date"></span></h2>
+<p class="help">※通知はこのページを開いている間の画面内アラートです。iPhoneでアプリを閉じた状態のプッシュ通知には対応していません。</p>
+<button type="button" class="secondary" onclick="alert('通知画面テスト：通知表示は機能しています。実際の予定時刻の通知はページを開いたままお試しください。')">🔔 通知表示を試す</button>
 <div id="todaySummary" class="today-summary" role="status"></div>
 <div id="todayPosts"></div>
 <p class="help">①本文コピー → ②投稿先を開く → 投稿後に③投稿済み。送信は自分で確認して行います。</p>
@@ -272,6 +274,7 @@ function openCopy35(value,title,chat=false){
  const dialog=document.getElementById("copyDialog35"),field=document.getElementById("copyField35");
  document.getElementById("copyTitle35").textContent=title;
  document.getElementById("chatLink35").style.display=chat?"block":"none";
+ document.getElementById("copyHint35").textContent="コピーした文章をメモ等に貼り付けて確認できます。";
  field.value=pendingCopyText35;
  if(typeof dialog.showModal==="function"){if(!dialog.open)dialog.showModal()}
  else dialog.setAttribute("open","");
@@ -284,10 +287,10 @@ function closeCopy35(){
 }
 async function retryCopy35(){
  const text=pendingCopyText35;
- if(await copyText(text)){alert("コピーしました。メモなどに貼り付けて確認してください。");return}
+ if(await copyText(text)){document.getElementById("copyHint35").textContent="コピーしました。メモなどに貼り付けて確認してください。";closeCopy35();return}
  const field=document.getElementById("copyField35");
  field.focus();field.select();field.setSelectionRange(0,field.value.length);
- document.getElementById("copyHint35").textContent="自動コピーが使えません。選択済みの本文を長押しして「コピー」を選んでください。";
+ document.getElementById("copyHint35").textContent="自動コピーが使えません。「もう一度コピー」を押してください。必要なら下の文章を選択してコピーしてください。";
 }
 function copyPost(id){
  const p=posts.find(x=>x.id===id);if(!p)return;
@@ -625,6 +628,7 @@ function checkNotifications() {
 }
 
 setInterval(checkNotifications, 15000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkNotifications()});
 checkNotifications();
 </script>
 <script src="import34.js?v=1"></script>
