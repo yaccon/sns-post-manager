@@ -89,7 +89,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </head>
 <body>
 <header>
-<h1>🧪 SNS投稿管理 Ver.3.5.2 テスト専用</h1>
+<h1>🧪 SNS投稿管理 Ver.3.5.3 テスト専用</h1>
 <p>通常アプリとは保存データを分離しています。ここには実際の投稿を入力しないでください。</p>
 </header>
 <dialog id="copyDialog35" class="copy-dialog35" aria-label="コピーする文章"><h2 id="copyTitle35">本文コピー</h2><p class="help" id="copyHint35">コピーを押してからメモ等に貼り付けて確認してください。</p><textarea id="copyField35" readonly aria-label="コピーする文章"></textarea><div class="row"><button type="button" class="primary" onclick="retryCopy35()">もう一度コピー</button><button type="button" class="secondary" onclick="closeCopy35()">元の画面に戻る</button></div><a id="chatLink35" href="https://chatgpt.com/" target="_blank" rel="noopener" style="display:none;font-weight:bold;padding:15px 0">ChatGPTを開く ↗</a></dialog><main>
@@ -111,7 +111,8 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <p class="help">42本で文章が途切れる場合は、各アカウント14本ずつ生成・登録できます。途中まで登録しても既存の投稿は消えません。</p>
 <button class="primary" onclick="generatePrompt()">① 生成指示をコピーしてChatGPTを開く</button>
 <p class="help">ChatGPTに貼り付けて送信してください。返答はJSON形式で受け取り、下の欄に貼り付けます。14本／28本／42本に対応。自動送信やAPI呼び出しは行いません。</p>
-<label for="jsonImport">② ChatGPTの生成結果（JSON）</label><textarea class="smallarea" id="jsonImport" placeholder='[{"account":"カイ","date":"2026-10-12T12:00","content":"投稿文"}, ...]'></textarea>
+<label for="jsonImport">② ChatGPTの生成結果（JSON）</label>
+<div class="pill"><strong>🧪 テスト専用・サンプル投稿</strong><p class="help">ChatGPT操作なしで取り込み確認ができます。データはテスト版だけに保存されます。最初に「投稿を始める日」を選んでください。</p><div class="row"><button type="button" class="secondary" onclick="fillTestPosts35(14)">選択した企画の14本を入力</button><button type="button" class="secondary" onclick="fillTestPosts35(42)">全42本を入力</button></div></div><textarea class="smallarea" id="jsonImport" placeholder='[{"account":"カイ","date":"2026-10-12T12:00","content":"投稿文"}, ...]'></textarea>
 <button class="secondary" onclick="pasteGeneratedJson()">📋 クリップボードからJSONを貼り付ける</button>
 <button class="primary" onclick="importPosts()">③ 内容を確認して一括登録</button>
 <p class="status" id="importStatus" role="status"></p><div id="importReview" aria-live="polite"></div>
@@ -344,6 +345,25 @@ const fullInstruction=instruction+"\n過去の投稿履歴（直近最大150件�
 openCopy35(fullInstruction,"生成指示をコピーしてChatGPTに貼る",true);retryCopy35()
 }
 async function copyText(value){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(value);return true}}catch(e){}try{const t=document.createElement("textarea");t.value=value;t.setAttribute("readonly","");t.style.position="fixed";t.style.left="0";t.style.top="0";t.style.opacity="0.01";document.body.appendChild(t);t.focus();t.select();t.setSelectionRange(0,t.value.length);const ok=document.execCommand("copy");t.remove();return !!ok}catch(e){return false}}
+function fillTestPosts35(count){
+ const start=document.getElementById("weekstart").value;
+ if(!start){alert("開始日を選んでください");return}
+ const platform=document.getElementById("destination").value;
+ const batch=document.getElementById("generationBatch").value;
+ const accounts=["カイ","後輩くん","漫画・恋愛"];
+ const selected={kai:"カイ",kouhai:"後輩くん",manga:"漫画・恋愛"}[batch]||"カイ";
+ const list=count===42?accounts:[selected];
+ const ideas=["投稿企画の整理","文章の見直し","作業時間の節約","アイデアの記録","初心者の質問","無料ツール検討","制作の振り返り","週末の準備","画像の検証","チェックリスト","小さな改善","データの整理","連載の構想","次の目標"];
+ const rows=[];
+ for(let a=0;a<list.length;a++)for(let d=0;d<7;d++)for(const [i,time] of ["12:00","20:00"].entries()){
+  const idx=d*2+i;
+  const stamp="試験専用"+(a+1)+"組"+(idx+1)+"番";
+  rows.push({account:list[a],platform,date:localDay(start,d)+"T"+time,content:stamp+"："+ideas[idx]+"をテーマに、"+(a+1)+"番目の企画と"+(idx+1)+"番目の視点で独自に考えます。実際には投稿しないテスト文章です。"});
+ }
+ document.getElementById("jsonImport").value=JSON.stringify(rows,null,2);
+ document.getElementById("importStatus").textContent="テスト用"+rows.length+"本を入力しました。「③ 内容を確認して一括登録」を押してください。既に同じ日時の投稿がある場合は追加されません。";
+ document.getElementById("jsonImport").scrollIntoView({behavior:"smooth",block:"center"});
+}
 function importPosts(){
  const status=document.getElementById("importStatus");
  const area=document.getElementById("importReview");area.replaceChildren();pendingImport=null;
