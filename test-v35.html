@@ -203,11 +203,16 @@ let posts=[];let history=[];let currentFilter="all";const selected=new Set();let
 try{posts=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(posts))posts=[]}catch(e){posts=[]}
 try{history=JSON.parse(localStorage.getItem(historyKey)||"[]");if(!Array.isArray(history))history=[]}catch(e){history=[]}
 function norm(t){return String(t||"").normalize("NFKC").replace(/\s+/g,"").replace(/[。、！？!?,.「」『』"'’‘“”・:：;；]/g,"").toLowerCase()}
+// Account + destination + normalized text identify a saved post.
+// Legacy rows without a platform remain preserved as a separate "unknown" group.
+function historyIdentity(p){
+ return JSON.stringify([p.account||"",p.platform||"不明",norm(p.content)]);
+}
 function addHistory(entries){
- const seen=new Set(history.filter(h=>h&&typeof h.content==="string").map(h=>(h.account||"")+"|"+norm(h.content)));
+ const seen=new Set(history.filter(h=>h&&typeof h.content==="string").map(historyIdentity));
  for(const p of entries){if(!p||typeof p.content!=="string"||!p.content.trim()||typeof p.account!=="string")continue;
- const code=p.account+"|"+norm(p.content);
- if(!seen.has(code)){history.push({account:p.account,content:p.content,date:p.date||""});seen.add(code)}
+ const code=historyIdentity(p);
+ if(!seen.has(code)){history.push({account:p.account,platform:p.platform||"不明",content:p.content,date:p.date||""});seen.add(code)}
  }
 }
 addHistory(posts);
@@ -249,8 +254,9 @@ function findCollision(item,extra=[],excludeId=null){
  for(const ref of posts.concat(history,extra)){
  if(!ref||typeof ref.content!=="string"||(excludeId!==null&&ref.id===excludeId))continue;
  const other=norm(ref.content);
+ // Reposting the same text to X and Threads is intentional.
+ if(ref.account!==item.account||ref.platform!==item.platform)continue;
  if(n===other)return {kind:"exact",ref,score:1};
- if(ref.account!==item.account)continue;
  const score=similarity(n,other);
  if(score>=(n.length<20?.78:.66)&&(!best||score>best.score))best={kind:"similar",ref,score};
  }
