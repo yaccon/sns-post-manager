@@ -27,7 +27,9 @@ class El {
 function app(initialPosts=[],initialHistory=[],preview=false){
  const els=new Map(), alerts=[];
  const get=k=>{if(!els.has(k))els.set(k,new El());return els.get(k)};
- const store=new Map([['sns-post-manager-v1',JSON.stringify(initialPosts)],['sns-post-manager-history-v1',JSON.stringify(initialHistory)]]);
+ const postKey=preview?'sns-post-manager-test-v35':'sns-post-manager-v1';
+ const historyKey=preview?'sns-post-manager-history-test-v35':'sns-post-manager-history-v1';
+ const store=new Map([[postKey,JSON.stringify(initialPosts)],[historyKey,JSON.stringify(initialHistory)]]);
  const c=vm.createContext({
   document:{getElementById:get,createElement:()=>new El(),body:new El(),execCommand:()=>true,addEventListener:()=>{}},
   localStorage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},
@@ -39,8 +41,8 @@ function app(initialPosts=[],initialHistory=[],preview=false){
  vm.runInContext(preview?previewJs:js,c);vm.runInContext(hist,c);vm.runInContext(imported,c);
  get('weekstart').value='2026-10-19';get('destination').value='X';
  const run=s=>vm.runInContext(s,c,{timeout:5000});
- return {get,run,store,alerts,posts:()=>JSON.parse(store.get('sns-post-manager-v1')||'[]'),
-         history:()=>JSON.parse(store.get('sns-post-manager-history-v1')||'[]')};
+ return {get,run,store,alerts,posts:()=>JSON.parse(store.get(postKey)||'[]'),
+         history:()=>JSON.parse(store.get(historyKey)||'[]')};
 }
 function entry(platform,content='共通の投稿文です。二つのSNSで同じ内容を使うテスト',id='p'){
  return {id,account:'カイ',platform,date:'2026-10-18T12:00',content,done:true};
