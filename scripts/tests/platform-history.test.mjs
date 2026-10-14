@@ -115,7 +115,11 @@ test('14 Threads posts import even if same account/X has identical body texts',(
  for(let i=0;i<7;i++)for(const [idx,time] of ['12:00','20:00'].entries()){
   const date=new Date('2026-10-19T12:00:00Z');date.setUTCDate(date.getUTCDate()+i);
   const day=date.toISOString().slice(0,10);
-  list.push({account:'カイ',platform:'Threads',date:day+'T'+time,content:'投稿内容のテストバッチ。違うテーマで記録します。'+(i*2+idx+1)});
+  let seed=(i*2+idx+1)*103831;
+  const abc="あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん";
+  let body="";
+  for(let k=0;k<115;k++){seed=(seed*16807)%2147483647;body+=abc[seed%abc.length];}
+  list.push({account:'カイ',platform:'Threads',date:day+'T'+time,content:body});
  }
  const s=app([],list.map((p,i)=>({...p,platform:'X',id:'history-'+i})),true);
  s.get('destination').value='Threads';
