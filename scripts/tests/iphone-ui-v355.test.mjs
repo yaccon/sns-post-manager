@@ -73,6 +73,7 @@ test('same text: X and Threads both new when there is no prior history',()=>{
  a.el('actionOk35').onclick();
  return task.then(()=>{
   assert.equal(a.history().length,2);
+  a.el('pasteHistory342').value=JSON.stringify([{account:'カイ',platform:'X',content:text},{account:'カイ',platform:'Threads',content:text}]);
   a.run('previewPastedHistory342()');
   assert.equal(a.run('pastePreview342.fresh.length'),0);
  });
@@ -90,7 +91,7 @@ test('if X already exists, show one new Threads record and explain it',()=>{
  assert.equal(a.run('pastePreview342.states[0].kind'),'登録済み／重複');
  assert.equal(a.run('pastePreview342.states[1].kind'),'新規');
  const rows=a.el('pastePreview342').children;
- const texts=rows.flatMap(x=>x.children||[]).map(x=>x.textContent);
+ const texts=rows.map(x=>x.textContent);
  assert.ok(texts.some(t=>String(t).includes('X：登録済み／重複')&&String(t).includes('Threads：新規')));
 });
 test('editing uses multiline textarea and preserves line breaks',async()=>{
