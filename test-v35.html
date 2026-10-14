@@ -85,14 +85,14 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .paste-entry342 p{font-size:13px;margin:5px 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .paste-error342{color:#a22!important}
 .storage342{white-space:pre-wrap;line-height:1.8;font-size:13px;color:#334155;background:#f3f6fa;border-radius:10px;padding:11px;margin-top:10px}
-</style>
+.copy-dialog35{border:0;border-radius:14px;width:min(94vw,650px);max-height:85dvh;padding:18px;box-shadow:0 18px 65px #0005}.copy-dialog35::backdrop{background:#0008}.copy-dialog35 textarea{width:100%;height:min(48dvh,350px);font-size:16px;user-select:text;-webkit-user-select:text;background:#fff}.copy-dialog35 .row{margin-top:12px}.copy-dialog35 .row button{min-height:48px}</style>
 </head>
 <body>
 <header>
-<h1>🧪 SNS投稿管理 Ver.3.5 テスト専用</h1>
+<h1>🧪 SNS投稿管理 Ver.3.5.1 テスト専用</h1>
 <p>通常アプリとは保存データを分離しています。ここには実際の投稿を入力しないでください。</p>
 </header>
-<main>
+<dialog id="copyDialog35" class="copy-dialog35" aria-label="コピーする文章"><h2 id="copyTitle35">本文コピー</h2><p class="help" id="copyHint35">コピーできないときは、本文を長押しして「すべて選択」→「コピー」を選んでください。</p><textarea id="copyField35" readonly aria-label="コピーする文章"></textarea><div class="row"><button type="button" class="primary" onclick="retryCopy35()">もう一度コピー</button><button type="button" class="secondary" onclick="closeCopy35()">閉じる</button></div><a id="chatLink35" href="https://chatgpt.com/" target="_blank" rel="noopener" style="display:none;font-weight:bold;padding:15px 0">ChatGPTを開く ↗</a></dialog><main>
 <section class="card" style="border:2px solid #257b50"><strong>✅ このページは動作テスト専用です</strong><p class="help">通常版の投稿や履歴は表示・変更しません。ここでの登録はテスト用です。実在の投稿や個人情報は入力せず、試験用の文章でお試しください。</p></section>
 <section class="card today-card" id="todaySection">
 <h2>📌 今日の投稿 <span id="todayDate" class="today-date"></span></h2>
@@ -266,26 +266,35 @@ function savePost(){
  document.getElementById("content").value="";
  render();
 }
+let pendingCopyText35="";
+function openCopy35(value,title,chat=false){
+ pendingCopyText35=String(value);
+ const dialog=document.getElementById("copyDialog35"),field=document.getElementById("copyField35");
+ document.getElementById("copyTitle35").textContent=title;
+ document.getElementById("chatLink35").style.display=chat?"block":"none";
+ field.value=pendingCopyText35;
+ if(typeof dialog.showModal==="function"){if(!dialog.open)dialog.showModal()}
+ else dialog.setAttribute("open","");
+ field.focus();field.select();field.setSelectionRange(0,field.value.length);
+}
+function closeCopy35(){
+ const dialog=document.getElementById("copyDialog35");
+ if(typeof dialog.close==="function"&&dialog.open)dialog.close();
+ else dialog.removeAttribute("open");
+}
+async function retryCopy35(){
+ const text=pendingCopyText35;
+ if(await copyText(text)){alert("コピーしました。メモなどに貼り付けて確認してください。");return}
+ const field=document.getElementById("copyField35");
+ field.focus();field.select();field.setSelectionRange(0,field.value.length);
+ document.getElementById("copyHint35").textContent="自動コピーが使えません。選択済みの本文を長押しして「コピー」を選んでください。";
+}
 function copyPost(id){
-const p=posts.find(x=>x.id===id);
-if(!p)return;
-if(navigator.clipboard&&window.isSecureContext){
-navigator.clipboard.writeText(p.content)
-.then(()=>alert("コピーしました"))
-.catch(()=>fallbackCopy(p.content));
-}else fallbackCopy(p.content);
+ const p=posts.find(x=>x.id===id);if(!p)return;
+ openCopy35(p.content,"投稿本文をコピー",false);
+ retryCopy35();
 }
-function fallbackCopy(text){
-const t=document.createElement("textarea");
-t.value=text;
-t.style.position="fixed";
-t.style.opacity="0";
-document.body.appendChild(t);
-t.select();
-const ok=document.execCommand("copy");
-t.remove();
-alert(ok?"コピーしました":"コピーできませんでした。本文を長押ししてコピーしてください。");
-}
+function fallbackCopy(text){openCopy35(text,"本文を長押ししてコピー",false)}
 function openPlatform(id){
 const p=posts.find(x=>x.id===id);
 if(!p)return;
@@ -329,9 +338,9 @@ const slots=batchAccount?allSlots.filter(s=>s.account===batchAccount):allSlots;
 const recentHistory=history.filter(p=>!batchAccount||p.account===batchAccount).slice(-150).map(p=>({account:p.account,content:p.content}));
 const instruction="過去投稿との重複防止が最優先です。末尾の過去投稿履歴を確認し、文章の言い換えだけでなく、主張・題材・例・冒頭のフックが似ている投稿も避けてください。毎週、新しい問題提起・視点・具体例を選んでください。次の"+slots.length+"枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けに、14本あたり実用・共感8本、後輩くん制作物語の紹介4本、無料のSNS投稿管理アプリの開発状況と自然な案内2本を目安に構成する。実在する配布URLは入力されていないので架空のURLを絶対に作らず、未公開アプリを「配布中」と断定しない。後輩くんは初心者の成長を描くフィクション企画。2つ目の副業としてLINEスタンプを作る連載を進める。キャラクター統一、透過、切り抜き、連番保存、検品など実際に確認できた制作工程を物語に生かし、連載の時系列を守る。「カイが後輩くんのためにツールを作った」という設定を使う場合はフィクションと分かる表現にし、架空の売上や実績を現実の事実として断定しない。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。"+slots.length+"個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
 const fullInstruction=instruction+"\n過去の投稿履歴（直近最大150件。表現だけでなく題材の重複も避ける）:"+JSON.stringify(recentHistory);
-copyText(fullInstruction).then(ok=>{if(ok){alert("生成指示をコピーしました。ChatGPTを開き、貼り付けて送信してください。");window.open("https://chatgpt.com/","_blank","noopener")}else{document.getElementById("jsonImport").value=fullInstruction;alert("コピーできなかったため欄に指示を表示しました。長押ししてコピーしてください。")}})
+openCopy35(fullInstruction,"生成指示をコピーしてChatGPTに貼る",true);retryCopy35()
 }
-async function copyText(value){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(value);return true}}catch(e){}const t=document.createElement("textarea");t.value=value;t.style.position="fixed";t.style.opacity="0";document.body.appendChild(t);t.select();const ok=document.execCommand("copy");t.remove();return ok}
+async function copyText(value){try{if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(value);return true}}catch(e){}try{const t=document.createElement("textarea");t.value=value;t.setAttribute("readonly","");t.style.position="fixed";t.style.left="0";t.style.top="0";t.style.opacity="0.01";document.body.appendChild(t);t.focus();t.select();t.setSelectionRange(0,t.value.length);const ok=document.execCommand("copy");t.remove();return !!ok}catch(e){return false}}
 function importPosts(){
  const status=document.getElementById("importStatus");
  const area=document.getElementById("importReview");area.replaceChildren();pendingImport=null;
