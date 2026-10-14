@@ -89,7 +89,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.4.2</h1>
+<h1>SNS投稿管理 Ver.3.5（分割生成対応）</h1>
 <p>毎日の投稿作業を5分以内に</p>
 </header>
 <main>
@@ -103,9 +103,11 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <h2>✨ AIで1週間分の投稿を作る</h2>
 <div class="pill">カイ・後輩くん・漫画恋愛 各14本 ／ 合計42本<br>毎日12:00・20:00 ／ API追加料金0円</div>
 <label for="weekstart">投稿を始める日</label><input type="date" id="weekstart">
-<label for="destination">投稿先（42本に共通）</label><select id="destination"><option>X</option><option>Threads</option></select>
-<button class="primary" onclick="generatePrompt()">① 42本の生成指示をコピーしてChatGPTを開く</button>
-<p class="help">ChatGPTに貼り付けて送信してください。返答はJSON形式で受け取り、下の欄に貼り付けます。自動送信やAPI呼び出しは行いません。</p>
+<label for="destination">投稿先</label><select id="destination"><option>X</option><option>Threads</option></select>
+<label for="generationBatch">生成する本数</label><select id="generationBatch"><option value="all">全42本まとめて（従来どおり）</option><option value="kai">カイ14本</option><option value="kouhai">後輩くん14本</option><option value="manga">漫画・恋愛14本</option></select>
+<p class="help">42本で文章が途切れる場合は、各アカウント14本ずつ生成・登録できます。途中まで登録しても既存の投稿は消えません。</p>
+<button class="primary" onclick="generatePrompt()">① 生成指示をコピーしてChatGPTを開く</button>
+<p class="help">ChatGPTに貼り付けて送信してください。返答はJSON形式で受け取り、下の欄に貼り付けます。14本／28本／42本に対応。自動送信やAPI呼び出しは行いません。</p>
 <label for="jsonImport">② ChatGPTの生成結果（JSON）</label><textarea class="smallarea" id="jsonImport" placeholder='[{"account":"カイ","date":"2026-10-12T12:00","content":"投稿文"}, ...]'></textarea>
 <button class="secondary" onclick="pasteGeneratedJson()">📋 クリップボードからJSONを貼り付ける</button>
 <button class="primary" onclick="importPosts()">③ 内容を確認して一括登録</button>
@@ -206,15 +208,25 @@ function addHistory(entries){
 }
 addHistory(posts);
 function persist(){
- const before=history.slice();
+ const previousHistory=history.slice();
+ let storedPosts=null,storedHistory=null,snapshotTaken=false,rollbackFailed=false;
  try{
+ storedPosts=localStorage.getItem(key);
+ storedHistory=localStorage.getItem(historyKey);
+ snapshotTaken=true;
  addHistory(posts);
  localStorage.setItem(key,JSON.stringify(posts));
  localStorage.setItem(historyKey,JSON.stringify(history));
  return true;
  }catch(e){
- history=before;
- alert("保存できませんでした。ブラウザの保存設定や空き容量を確認してください。");
+ history=previousHistory;
+ if(snapshotTaken){
+  try{
+   if(storedPosts===null)localStorage.removeItem(key);else localStorage.setItem(key,storedPosts);
+   if(storedHistory===null)localStorage.removeItem(historyKey);else localStorage.setItem(historyKey,storedHistory);
+  }catch(rollbackError){rollbackFailed=true}
+ }
+ alert("保存できませんでした。ブラウザの保存設定や空き容量を確認してください。"+(rollbackFailed?" 保存状態を確認し、バックアップから復元してください。":""));
  return false;
  }
 }
@@ -281,14 +293,16 @@ window.open(p.platform==="X"?"https://x.com/compose/post":"https://www.threads.n
 function toggleDone(id){
 const p=posts.find(x=>x.id===id);
 if(!p)return;
+const before=p.done;
 p.done=!p.done;
-persist();
+if(!persist())p.done=before;
 render();
 }
 function deletePost(id){
 if(!confirm("この投稿を削除しますか？"))return;
+const before=posts;
 posts=posts.filter(x=>x.id!==id);
-persist();
+if(!persist())posts=before;
 render();
 }
 function filterPosts(mode){currentFilter=mode;render()}
@@ -307,9 +321,12 @@ function localDay(date,offset){const d=new Date(date+"T12:00:00");d.setDate(d.ge
 function generatePrompt(){
 const start=document.getElementById("weekstart").value;if(!start){alert("開始日を選んでください");return}
 const platform=document.getElementById("destination").value;
-const slots=[];for(const account of ["カイ","後輩くん","漫画・恋愛"]){for(let day=0;day<7;day++){for(const time of ["12:00","20:00"]){slots.push({account,platform,date:localDay(start,day)+"T"+time})}}}
-const recentHistory=history.slice(-150).map(p=>({account:p.account,content:p.content}));
-const instruction="過去投稿との重複防止が最優先です。末尾の過去投稿履歴を確認し、文章の言い換えだけでなく、主張・題材・例・冒頭のフックが似ている投稿も避けてください。毎週、新しい問題提起・視点・具体例を選んでください。次の42枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けの実践的な発信。後輩くんは初心者の成長を描くフィクション企画（架空の実績を現実の事実として断定しない）。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。42個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
+const allSlots=[];for(const account of ["カイ","後輩くん","漫画・恋愛"]){for(let day=0;day<7;day++){for(const time of ["12:00","20:00"]){allSlots.push({account,platform,date:localDay(start,day)+"T"+time})}}}
+const batch=document.getElementById("generationBatch").value;
+const batchAccount={kai:"カイ",kouhai:"後輩くん",manga:"漫画・恋愛"}[batch]||null;
+const slots=batchAccount?allSlots.filter(s=>s.account===batchAccount):allSlots;
+const recentHistory=history.filter(p=>!batchAccount||p.account===batchAccount).slice(-150).map(p=>({account:p.account,content:p.content}));
+const instruction="過去投稿との重複防止が最優先です。末尾の過去投稿履歴を確認し、文章の言い換えだけでなく、主張・題材・例・冒頭のフックが似ている投稿も避けてください。毎週、新しい問題提起・視点・具体例を選んでください。次の"+slots.length+"枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けに、14本あたり実用・共感8本、後輩くん制作物語の紹介4本、無料のSNS投稿管理アプリの開発状況と自然な案内2本を目安に構成する。実在する配布URLは入力されていないので架空のURLを絶対に作らず、未公開アプリを「配布中」と断定しない。後輩くんは初心者の成長を描くフィクション企画。2つ目の副業としてLINEスタンプを作る連載を進める。キャラクター統一、透過、切り抜き、連番保存、検品など実際に確認できた制作工程を物語に生かし、連載の時系列を守る。「カイが後輩くんのためにツールを作った」という設定を使う場合はフィクションと分かる表現にし、架空の売上や実績を現実の事実として断定しない。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。"+slots.length+"個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
 const fullInstruction=instruction+"\n過去の投稿履歴（直近最大150件。表現だけでなく題材の重複も避ける）:"+JSON.stringify(recentHistory);
 copyText(fullInstruction).then(ok=>{if(ok){alert("生成指示をコピーしました。ChatGPTを開き、貼り付けて送信してください。");window.open("https://chatgpt.com/","_blank","noopener")}else{document.getElementById("jsonImport").value=fullInstruction;alert("コピーできなかったため欄に指示を表示しました。長押ししてコピーしてください。")}})
 }
@@ -320,17 +337,19 @@ function importPosts(){
  const original=document.getElementById("jsonImport").value.trim();
  let raw=original.replace(/^\x60{3}(?:json)?\s*/i,"").replace(/\s*\x60{3}$/,"");
  let items;try{items=JSON.parse(raw)}catch(e){status.textContent="JSON形式を確認してください。途中で切れている場合はChatGPTに続きを依頼してください。";return}
- if(!Array.isArray(items)||items.length!==42){status.textContent="42本ちょうどの配列が必要です。現在："+(Array.isArray(items)?items.length:"配列ではありません")+"本";return}
+ if(!Array.isArray(items)||![14,28,42].includes(items.length)){status.textContent="14本・28本・42本のJSON配列が必要です。現在："+(Array.isArray(items)?items.length:"配列ではありません")+"本";return}
  const allowed=["カイ","後輩くん","漫画・恋愛"];const start=document.getElementById("weekstart").value;const platform=document.getElementById("destination").value;
  if(!start){status.textContent="開始日を選んでください";return}
  const expected=new Set();for(const a of allowed)for(let i=0;i<7;i++)for(const t of ["12:00","20:00"])expected.add(a+"|"+localDay(start,i)+"T"+t);
- const seen=new Set();
+ const seen=new Set();const counts=new Map();
  for(const item of items){
  if(!item||!allowed.includes(item.account)||item.platform!==platform||typeof item.date!=="string"||typeof item.content!=="string"||!item.content.trim()){status.textContent="アカウント・投稿先・日時・本文に不正な値があります。";return}
  const slot=item.account+"|"+item.date;
  if(!expected.has(slot)||seen.has(slot)){status.textContent="日時・アカウントに重複か指定外の値があります。";return}
  seen.add(slot);
+ counts.set(item.account,(counts.get(item.account)||0)+1);
  }
+ if([...counts.values()].some(n=>n!==14)){status.textContent="分割取り込みはアカウントごとに14本（7日×昼夜）にしてください。";return}
  const existing=new Set(posts.map(p=>p.account+"|"+p.platform+"|"+p.date));
  const staged=[];const candidates=[];let duplicateDates=0,exact=0,nearCount=0;
  for(const item of items){
@@ -384,7 +403,14 @@ function finishImport(){
 }
 function exportBackup(){
  const blob=new Blob([JSON.stringify({version:4,posts,history},null,2)],{type:"application/json"});
- const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sns-posts-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sns-posts-backup-"+new Date().toISOString().slice(0,10)+".json";
+try{
+ a.click();
+ document.getElementById("backupStatus").textContent="バックアップの保存を開始しました（予定"+posts.length+"件・履歴"+history.length+"件）。iPhoneの「ファイル」など保存先にファイルがあるか確認してください。";
+}catch(e){
+ document.getElementById("backupStatus").textContent="ダウンロードを開始できませんでした。ブラウザのダウンロード許可を確認してください。";
+}
+setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function refreshBackupStatus(){
  const label=document.getElementById("backupHistoryCount");
@@ -550,7 +576,7 @@ div.append(meta,body,actions);
 root.appendChild(div);
 });
 }
-document.getElementById("weekstart").value=localDay(new Date().toLocaleDateString("sv-SE"),1);
+document.getElementById("weekstart").value=localDay(v33LocalToday(),1);
 render();
 refreshBackupStatus();
 
