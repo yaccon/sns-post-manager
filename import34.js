@@ -136,7 +136,7 @@ async function prepareHistoryImport(){
 function renderHistoryImport(){
  const panel=document.getElementById("importPreview34");panel.hidden=false;panel.replaceChildren();
  const snap=import34Snapshot;
- const existing=new Set(history.filter(p=>p?.account===snap.account).map(p=>norm(p.content)));
+ const existing=new Set(history.filter(p=>p?.account===snap.account&&p?.platform===snap.source).map(p=>norm(p.content)));
  const fresh=import34Rows.filter(p=>!existing.has(norm(p.content)));
  const header=document.createElement("p");header.className="import-stats";
  header.textContent="選択ファイル："+snap.file+"\n企画："+snap.account+" ／ "+snap.source+"\n抽出："+import34Rows.length+"件、登録候補："+fresh.length+"件、履歴内の重複："+(import34Rows.length-fresh.length)+"件";
@@ -160,15 +160,15 @@ function commitHistoryImport(){
  if(account!==document.getElementById("importAccount").value||source!==document.getElementById("importSource").value){
   import34Status("企画またはSNSの選択が変わりました。ファイルを選び直してください。",true);return;
  }
- const existing=new Set(history.filter(p=>p?.account===account).map(p=>norm(p.content)));
+ const existing=new Set(history.filter(p=>p?.account===account&&p?.platform===source).map(p=>norm(p.content)));
  const candidates=import34Rows.filter(p=>!existing.has(norm(p.content)));
  if(!candidates.length){import34Status("新規の投稿はありません");return}
  if(!confirm(account+"の過去投稿 "+candidates.length+"件を、重複防止用の履歴だけに保存しますか？"))return;
  /* Atomic localStorage update. Never modify scheduled posts. */
  const old=history;
  const incoming=candidates.map(p=>({account,platform:source,content:p.content,date:p.date}));
- const updated=history.slice(),seen=new Set(history.map(p=>p.account+"|"+norm(p.content)));
- for(const p of incoming){const key=p.account+"|"+norm(p.content);if(seen.has(key))continue;seen.add(key);updated.push(p)}
+ const updated=history.slice(),seen=new Set(history.map(historyIdentity));
+ for(const p of incoming){const identity=historyIdentity(p);if(seen.has(identity))continue;seen.add(identity);updated.push(p)}
  try{
   localStorage.setItem(historyKey,JSON.stringify(updated));history=updated;
   if(typeof refreshBackupStatus==="function")refreshBackupStatus();

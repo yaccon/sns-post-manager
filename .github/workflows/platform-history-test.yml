@@ -1,0 +1,24 @@
+name: SNS投稿履歴 X/Threads 重複防止テスト
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'test-v35.html'
+      - 'import34.js'
+      - 'history342.js'
+      - 'scripts/tests/platform-history.test.mjs'
+      - '.github/workflows/platform-history-test.yml'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check platform separation and existing-data preservation
+        run: node --test scripts/tests/platform-history.test.mjs
