@@ -17,18 +17,19 @@ class FakeEl {
   replaceChildren(...children){this.children=children;}
   querySelectorAll(){return [];}
   focus(){}
+  click(){this.clicked=true;}
 }
 function setup(seed=[]){
  const el=new Map();
  const get=id=>{if(!el.has(id))el.set(id,new FakeEl());return el.get(id);};
  const storage=new Map([['sns-post-manager-v1',JSON.stringify(seed)]]);
  const ctx=vm.createContext({
-   localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v))},
+   localStorage:{getItem:k=>storage.get(k)??null,setItem:(k,v)=>storage.set(k,String(v)),removeItem:k=>storage.delete(k)},
    document:{getElementById:get,createElement:()=>new FakeEl(),execCommand:()=>true,body:new FakeEl()},
    window:{isSecureContext:true,open:()=>{}},
    navigator:{clipboard:{writeText:async()=>{}}},
    alert:()=>{},confirm:()=>true,prompt:()=>null,
-   setInterval:()=>{},Date,Intl,Blob,URL,console,
+   setInterval:()=>{},setTimeout:()=>{},Date,Intl,Blob,URL,console,
  });
  vm.runInContext(script,ctx,{filename:'index.html',timeout:5000});
  get('weekstart').value='2026-10-19';
@@ -106,4 +107,51 @@ test('Invalid batch sizes and malformed group cannot change storage',()=>{
  s.run('importPosts()');
  assert.match(s.get('importStatus').textContent,/アカウントごとに14本/);
  assert.equal(s.storage.get('sns-post-manager-v1'),initial);
+});
+
+test('Failed storage update rolls back both saved keys',()=>{
+ const s=setup();
+ s.get('account').value='カイ';s.get('platform').value='X';
+ s.get('date').value='2026-10-19T12:00';s.get('content').value='確認用のテスト投稿です';
+ const original=s.storage.get('sns-post-manager-v1');
+ const originalSet=s.ctx.localStorage.setItem;let once=true;
+ s.ctx.localStorage.setItem=(key,val)=>{
+  if(key==='sns-post-manager-history-v1'&&once){once=false;throw Error('quota');}
+  originalSet(key,val);
+ };
+ s.run('savePost()');
+ assert.equal(s.storage.get('sns-post-manager-v1'),original);
+ assert.equal(s.storage.has('sns-post-manager-history-v1'),false);
+ assert.equal(s.run('posts.length'),0);
+});
+test('Failed post-status update and deletion keep original state',()=>{
+ const entry={id:'safe',account:'カイ',platform:'X',date:'2026-10-19T12:00',content:'以前に保存した文章',done:false};
+ const s=setup([entry]),original=s.storage.get('sns-post-manager-v1');
+ const originalSet=s.ctx.localStorage.setItem;
+ s.ctx.localStorage.setItem=(key,val)=>{
+  if(key==='sns-post-manager-history-v1')throw Error('quota');
+  originalSet(key,val);
+ };
+ s.run('toggleDone("safe")');
+ assert.equal(s.run('posts[0].done'),false);
+ s.run('deletePost("safe")');
+ assert.equal(s.run('posts.length'),1);
+ assert.equal(s.storage.get('sns-post-manager-v1'),original);
+});
+test('Backup reports download started instead of claiming it is saved',()=>{
+ const s=setup();s.run('exportBackup()');
+ assert.match(s.get('backupStatus').textContent,/保存を開始しました/);
+ assert.match(s.get('backupStatus').textContent,/保存先にファイルがあるか確認/);
+});
+test('Backup restore merges and preserves existing posted entry',async()=>{
+ const existing={id:'keep',account:'カイ',platform:'X',date:'2026-10-01T12:00',content:'既存投稿',done:true};
+ const incoming={id:'new',account:'後輩くん',platform:'Threads',date:'2026-10-20T20:00',content:'新しい投稿',done:false};
+ const s=setup([existing]);
+ s.ctx.testFile={text:async()=>JSON.stringify({version:4,posts:[existing,incoming],history:[{account:'後輩くん',content:'過去の投稿'}]})};
+ await s.run('restoreBackup({target:{files:[globalThis.testFile],value:"backup"}})');
+ const saved=JSON.parse(s.storage.get('sns-post-manager-v1'));
+ assert.equal(saved.length,2);
+ assert.deepEqual(saved[0],existing);
+ assert.deepEqual(saved[1],incoming);
+ assert.ok(JSON.parse(s.storage.get('sns-post-manager-history-v1')).some(x=>x.content==='過去の投稿'));
 });
