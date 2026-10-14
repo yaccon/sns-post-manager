@@ -42,11 +42,11 @@ function parsePastedHistory342(raw, selectedAccount){
 }
 function computeHistoryPreview342(raw,account){
  const parsed=parsePastedHistory342(raw,account);
- const exists=new Set(history.filter(h=>h&&typeof h.account==="string"&&typeof h.content==="string").map(h=>h.account+"|"+norm(h.content)));
+ const exists=new Set(history.filter(h=>h&&typeof h.account==="string"&&typeof h.content==="string").map(historyIdentity));
  const seen=new Set(),fresh=[];
  let duplicateCount=0;
  for(const p of parsed){
-   const normalized=norm(p.content),id=p.account+"|"+normalized;
+   const normalized=norm(p.content),id=historyIdentity(p);
    if(!normalized || seen.has(id) || exists.has(id)){duplicateCount++;continue}
    seen.add(id);fresh.push(p);
  }
@@ -73,7 +73,7 @@ function previewPastedHistory342(){
   list.className="paste-samples342";
   for(const item of preview.fresh.slice(0,5)){
     const entry=document.createElement("div");entry.className="paste-entry342";
-    const title=document.createElement("strong");title.textContent=item.account+(item.date?" ／ "+item.date.replace("T"," "):"")+" ／ 過去原稿";
+    const title=document.createElement("strong");title.textContent=item.account+" ／ "+item.platform+(item.date?" ／ "+item.date.replace("T"," "):"")+" ／ 過去原稿";
     const body=document.createElement("p");body.textContent=item.content;
     entry.append(title,body);list.appendChild(entry);
   }
