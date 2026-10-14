@@ -208,15 +208,25 @@ function addHistory(entries){
 }
 addHistory(posts);
 function persist(){
- const before=history.slice();
+ const previousHistory=history.slice();
+ let storedPosts=null,storedHistory=null,snapshotTaken=false,rollbackFailed=false;
  try{
+ storedPosts=localStorage.getItem(key);
+ storedHistory=localStorage.getItem(historyKey);
+ snapshotTaken=true;
  addHistory(posts);
  localStorage.setItem(key,JSON.stringify(posts));
  localStorage.setItem(historyKey,JSON.stringify(history));
  return true;
  }catch(e){
- history=before;
- alert("保存できませんでした。ブラウザの保存設定や空き容量を確認してください。");
+ history=previousHistory;
+ if(snapshotTaken){
+  try{
+   if(storedPosts===null)localStorage.removeItem(key);else localStorage.setItem(key,storedPosts);
+   if(storedHistory===null)localStorage.removeItem(historyKey);else localStorage.setItem(historyKey,storedHistory);
+  }catch(rollbackError){rollbackFailed=true}
+ }
+ alert("保存できませんでした。ブラウザの保存設定や空き容量を確認してください。"+(rollbackFailed?" 保存状態を確認し、バックアップから復元してください。":""));
  return false;
  }
 }
@@ -283,14 +293,16 @@ window.open(p.platform==="X"?"https://x.com/compose/post":"https://www.threads.n
 function toggleDone(id){
 const p=posts.find(x=>x.id===id);
 if(!p)return;
+const before=p.done;
 p.done=!p.done;
-persist();
+if(!persist())p.done=before;
 render();
 }
 function deletePost(id){
 if(!confirm("この投稿を削除しますか？"))return;
+const before=posts;
 posts=posts.filter(x=>x.id!==id);
-persist();
+if(!persist())posts=before;
 render();
 }
 function filterPosts(mode){currentFilter=mode;render()}
@@ -391,7 +403,14 @@ function finishImport(){
 }
 function exportBackup(){
  const blob=new Blob([JSON.stringify({version:4,posts,history},null,2)],{type:"application/json"});
- const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sns-posts-backup-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="sns-posts-backup-"+new Date().toISOString().slice(0,10)+".json";
+try{
+ a.click();
+ document.getElementById("backupStatus").textContent="バックアップの保存を開始しました（予定"+posts.length+"件・履歴"+history.length+"件）。iPhoneの「ファイル」など保存先にファイルがあるか確認してください。";
+}catch(e){
+ document.getElementById("backupStatus").textContent="ダウンロードを開始できませんでした。ブラウザのダウンロード許可を確認してください。";
+}
+setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function refreshBackupStatus(){
  const label=document.getElementById("backupHistoryCount");
