@@ -358,7 +358,9 @@ function fillTestPosts35(count){
  for(let a=0;a<list.length;a++)for(let d=0;d<7;d++)for(const [i,time] of ["12:00","20:00"].entries()){
   const idx=d*2+i;
   const stamp="試験専用"+(a+1)+"組"+(idx+1)+"番";
-  rows.push({account:list[a],platform,date:localDay(start,d)+"T"+time,content:stamp+"："+ideas[idx]+"をテーマに、"+(a+1)+"番目の企画と"+(idx+1)+"番目の視点で独自に考えます。実際には投稿しないテスト文章です。"});
+  let seed=(a+1)*10007+(idx+1)*33013;const chars="あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん";let sample="";
+  for(let n=0;n<120;n++){seed=(seed*16807)%2147483647;sample+=chars[seed%chars.length]}
+  rows.push({account:list[a],platform,date:localDay(start,d)+"T"+time,content:stamp+"："+ideas[idx]+"。"+sample});
  }
  document.getElementById("jsonImport").value=JSON.stringify(rows,null,2);
  document.getElementById("importStatus").textContent="テスト用"+rows.length+"本を入力しました。「③ 内容を確認して一括登録」を押してください。既に同じ日時の投稿がある場合は追加されません。";
