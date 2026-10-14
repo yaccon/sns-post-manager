@@ -5,7 +5,9 @@ import vm from 'node:vm';
 
 const html=fs.readFileSync('index.html','utf8');
 const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
-assert.ok(js,'inline app script');
+const previewHtml=fs.readFileSync('test-v35.html','utf8');
+const previewJs=previewHtml.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+assert.ok(js&&previewJs,'inline app script');
 const hist=fs.readFileSync('history342.js','utf8');
 const imported=fs.readFileSync('import34.js','utf8');
 
@@ -22,19 +24,19 @@ class El {
  removeAttribute(){}
  scrollIntoView(){}
 }
-function app(initialPosts=[],initialHistory=[]){
+function app(initialPosts=[],initialHistory=[],preview=false){
  const els=new Map(), alerts=[];
  const get=k=>{if(!els.has(k))els.set(k,new El());return els.get(k)};
  const store=new Map([['sns-post-manager-v1',JSON.stringify(initialPosts)],['sns-post-manager-history-v1',JSON.stringify(initialHistory)]]);
  const c=vm.createContext({
-  document:{getElementById:get,createElement:()=>new El(),body:new El(),execCommand:()=>true},
+  document:{getElementById:get,createElement:()=>new El(),body:new El(),execCommand:()=>true,addEventListener:()=>{}},
   localStorage:{getItem:k=>store.get(k)??null,setItem:(k,v)=>store.set(k,String(v)),removeItem:k=>store.delete(k)},
   window:{open:()=>{},isSecureContext:true},
   navigator:{clipboard:{writeText:async()=>true}},
   alert:v=>alerts.push(v),confirm:()=>true,prompt:()=>null,
   console,Date,Intl,Blob,URL,setInterval:()=>{},setTimeout:()=>{}
  });
- vm.runInContext(js,c);vm.runInContext(hist,c);vm.runInContext(imported,c);
+ vm.runInContext(preview?previewJs:js,c);vm.runInContext(hist,c);vm.runInContext(imported,c);
  get('weekstart').value='2026-10-19';get('destination').value='X';
  const run=s=>vm.runInContext(s,c,{timeout:5000});
  return {get,run,store,alerts,posts:()=>JSON.parse(store.get('sns-post-manager-v1')||'[]'),
@@ -115,7 +117,7 @@ test('14 Threads posts import even if same account/X has identical body texts',(
   const day=date.toISOString().slice(0,10);
   list.push({account:'カイ',platform:'Threads',date:day+'T'+time,content:'投稿内容のテストバッチ。違うテーマで記録します。'+(i*2+idx+1)});
  }
- const s=app([],list.map((p,i)=>({...p,platform:'X',id:'history-'+i})));
+ const s=app([],list.map((p,i)=>({...p,platform:'X',id:'history-'+i})),true);
  s.get('destination').value='Threads';
  s.get('jsonImport').value=JSON.stringify(list);
  s.run('importPosts()');
