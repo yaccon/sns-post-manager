@@ -606,13 +606,28 @@ async function restoreBackup(e){
   if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("投稿データの形式が違います");
   const extra=Array.isArray(data.history)?data.history:[];
   if(!extra.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"))throw Error("履歴の形式が違います");
+  if(data.references!==undefined&&!Array.isArray(data.references))throw Error("参考投稿の形式が違います");
+  const importedRefs=Array.isArray(data.references)?data.references:[];
+  if(importedRefs.length>500)throw Error("1回の復元で読み込める参考投稿は最大500件です。");
+  const cleaned=importedRefs.map(r=>normalizeReference37(r,true));
+  const knownRefIds=new Set(references.map(r=>String(r.id)));
+  const stagedRefs=references.slice();
+  for(const r of cleaned){
+   if(knownRefIds.has(String(r.id))||referenceDuplicate37(r,null,stagedRefs))continue;
+   if(stagedRefs.length>=500)throw Error("参考投稿が500件を超えるため復元できません。");
+   stagedRefs.push(r);knownRefIds.add(String(r.id));
+  }
   const knownIds=new Set(posts.map(p=>String(p.id)));
   const newPostCount=arr.filter(p=>!knownIds.has(String(p.id))).length;
   const knownHistory=new Set(history.map(historyIdentity));
   const newHistoryCount=extra.filter(p=>!knownHistory.has(historyIdentity(p))).length;
-  const label="ファイル："+file.name+"\n内容：投稿"+arr.length+"件・履歴"+extra.length+"件\n現在の画面に追加される見込み：投稿"+newPostCount+"件・履歴"+newHistoryCount+"件。\n\n復元しますか？";
+  const newReferenceCount=stagedRefs.length-references.length;
+  const label="ファイル："+file.name+
+   "\n内容：投稿"+arr.length+"件・履歴"+extra.length+"件・参考投稿"+importedRefs.length+"件"+
+   "\n現在の画面に追加される見込み：投稿"+newPostCount+"件・履歴"+newHistoryCount+"件・参考投稿"+newReferenceCount+"件。"+
+   "\n\n復元しますか？（過去のVer.3.6以前のバックアップも読み込めます）";
   if(!await uiConfirm35(label)){status.textContent="復元をキャンセルしました。既存データに変更はありません。";return}
-  const oldPosts=posts,oldHistory=history.slice(),ids=new Set(posts.map(p=>String(p.id)));
+  const oldPosts=posts,oldHistory=history.slice(),oldReferences=references.slice(),ids=new Set(posts.map(p=>String(p.id)));
   posts=posts.slice();
   for(const p of arr){
    if(ids.has(String(p.id)))continue;
@@ -620,15 +635,18 @@ async function restoreBackup(e){
    posts.push({...p,id});ids.add(String(id));
   }
   addHistory(extra);
+  references=stagedRefs;
   const addedPosts=posts.length-oldPosts.length,addedHistory=history.length-oldHistory.length;
+  const addedRefs=references.length-oldReferences.length;
   if(!persist()){
-   posts=oldPosts;history=oldHistory;
+   posts=oldPosts;history=oldHistory;references=oldReferences;
    status.textContent="復元できませんでした。データの保存に失敗しました。";
    refreshBackupStatus();return;
   }
   render();
+  renderReferenceLibrary37();
   refreshBackupStatus();
-  status.textContent="復元完了：投稿予定 "+addedPosts+"件、過去投稿履歴 "+addedHistory+"件を追加しました。履歴合計 "+history.length+"件。";
+  status.textContent="復元完了：投稿予定 "+addedPosts+"件、過去投稿履歴 "+addedHistory+"件、参考投稿 "+addedRefs+"件を追加しました。";
  }catch(err){status.textContent="復元できません："+err.message;uiInfo35(status.textContent)}
  finally{e.target.value=""}
 }
