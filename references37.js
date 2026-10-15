@@ -283,4 +283,98 @@ function renderReferenceLibrary37(){
  }
 }
 
+/* Guided, reference-only backup/restore: does not touch scheduled posts or history. */
+let pendingReferenceImport371=null;
+function referenceExport371(){
+ const status=document.getElementById("refBackupStatus371");
+ if(!references.length){status.textContent="参考投稿がまだ0件です。保存してからバックアップしてください。";return}
+ let url=null;
+ try{
+  const json={kind:"sns-reference-library",version:1,exportedAt:new Date().toISOString(),references:references.map(r=>normalizeReference37(r,true))};
+  const blob=new Blob([JSON.stringify(json,null,2)],{type:"application/json"});
+  url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=(referenceKey.includes("-test-")?"sns-TEST-v371-references-":"sns-reference-library-")+new Date().toISOString().slice(0,10)+".json";
+  a.style.display="none";
+  document.body.appendChild(a);
+  try{a.click()}finally{a.remove()}
+  status.textContent="参考投稿"+references.length+"件のバックアップ保存を開始しました。必ずiPhoneの「ファイル」でJSONファイルを確認してください。";
+ }catch(e){
+  status.textContent="バックアップを開始できませんでした："+String(e?.message||e);
+ }finally{
+  if(url)setTimeout(()=>URL.revokeObjectURL(url),60000);
+ }
+}
+async function prepareReferenceRestore371(e){
+ const input=e.target;
+ const file=input?.files?.[0];
+ if(!file)return;
+ const status=document.getElementById("refBackupStatus371");
+ const btn=document.getElementById("refCommitRestore371");
+ pendingReferenceImport371=null;btn.hidden=true;
+ status.textContent="選んだファイルを読み込み中："+file.name;
+ try{
+  if(file.size>5*1024*1024)throw Error("5MBを超える参考投稿JSONは読み込めません。");
+  let data;
+  try{data=JSON.parse(await file.text())}
+  catch(e){throw Error("JSON形式のファイルではありません。正しいバックアップを選んでください。")}
+  if(!data||!Array.isArray(data.references)){
+   throw Error("このファイルには参考投稿が含まれていません。通常版Ver.3.6以前のバックアップには参考投稿がありません。Ver.3.7以降のバックアップを選んでください。");
+  }
+  if(data.references.length>500)throw Error("参考投稿の登録上限500件を超えています。");
+  const clean=data.references.map(r=>normalizeReference37(r,true));
+  const staged=references.slice();
+  const incoming=[];
+  const ids=new Set(references.map(r=>String(r.id)));
+  for(const ref of clean){
+   if(ids.has(String(ref.id))||referenceDuplicate37(ref,null,staged))continue;
+   if(staged.length>=500)throw Error("登録上限500件を超えるため復元できません。");
+   staged.push(ref);incoming.push(ref);ids.add(String(ref.id));
+  }
+  pendingReferenceImport371={items:incoming,name:file.name,originalCount:clean.length};
+  status.textContent="確認：ファイル「"+file.name+"」には参考投稿"+clean.length+"件。"+
+   "\n新しく追加できる参考投稿："+incoming.length+"件 ／ 既に保存済み・重複："+(clean.length-incoming.length)+"件。"+
+   (incoming.length?"\n内容を確認して「② 参考投稿を復元」を押してください。":
+    "\n追加0件：全件登録済みか、ファイル内に新しい参考投稿がありません。これはエラーではありません。");
+  btn.hidden=incoming.length===0;
+ }catch(err){
+  status.textContent="復元ファイルを確認できません："+String(err?.message||err);
+  showReferenceNotice371("参考投稿の復元に失敗しました。画面の理由を確認してください");
+ }finally{input.value=""}
+}
+function commitReferenceRestore371(){
+ const status=document.getElementById("refBackupStatus371");
+ const btn=document.getElementById("refCommitRestore371");
+ const pending=pendingReferenceImport371;
+ if(!pending||!pending.items.length){
+  status.textContent="追加する参考投稿がありません。先にJSONファイルを選択してください。";return
+ }
+ const old=references.slice(),ids=new Set(references.map(r=>String(r.id)));
+ const merged=references.slice();
+ for(const r of pending.items){
+  if(ids.has(String(r.id))||referenceDuplicate37(r,null,merged))continue;
+  if(merged.length>=500){
+   status.textContent="復元を中止しました。参考投稿500件の上限に達しています。";return;
+  }
+  merged.push(r);ids.add(String(r.id));
+ }
+ const added=merged.length-old.length;
+ if(!added){
+  status.textContent="復元対象は既に登録されています。追加0件（正常）。";
+  pendingReferenceImport371=null;btn.hidden=true;return;
+ }
+ references=merged;
+ if(!persist()){
+  references=old;
+  status.textContent="復元できませんでした。データの保存容量とブラウザ設定を確認してください。元の参考投稿は維持しています。";
+  showReferenceNotice371("復元の保存に失敗しました");
+  return;
+ }
+ pendingReferenceImport371=null;btn.hidden=true;
+ renderReferenceLibrary37();refreshBackupStatus();
+ status.textContent="✓ 参考投稿を"+added+"件復元しました。現在の参考投稿は"+references.length+"件です。投稿予定・過去履歴は変更していません。";
+ showReferenceNotice371("✓ 参考投稿"+added+"件の復元に成功しました");
+}
+
 renderReferenceLibrary37();
