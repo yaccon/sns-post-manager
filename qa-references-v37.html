@@ -1,0 +1,831 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>【テスト専用】SNS投稿管理 Ver.3.7</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f4f6fa;color:#222;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
+header{background:#243b65;color:white;padding:20px 16px}
+h1{font-size:22px;margin:0}
+header p{font-size:13px;margin:8px 0 0}
+main{max-width:650px;margin:auto;padding:16px}
+.card{background:white;border-radius:14px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px #0001}
+h2{font-size:17px;margin:0 0 15px}
+label{display:block;font-size:13px;font-weight:bold;margin:12px 0 5px}
+input,select,textarea{width:100%;padding:12px;border:1px solid #ccd2dc;border-radius:9px;font-size:16px;background:white}
+textarea{min-height:125px;resize:vertical}
+button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;cursor:pointer}
+.primary{background:#2563eb;color:white;width:100%;margin-top:15px}
+.actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.actions button{background:#e9eef8}
+.post{border-top:1px solid #ddd;padding:15px 0}
+.post:first-child{border-top:0}
+.meta{font-size:12px;color:#666}
+.body{white-space:pre-wrap;overflow-wrap:anywhere;margin:10px 0}
+.done{opacity:.55}
+.empty{color:#777;font-size:14px}
+.help{font-size:13px;color:#536174;line-height:1.7}.secondary{background:#e9eef8;color:#173e76;width:100%;margin-top:9px}.danger{background:#fff1f1;color:#a22}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.status{font-size:13px;white-space:pre-wrap;color:#176447;margin-top:10px}.smallarea{min-height:100px}.pill{background:#eef4ff;border-radius:8px;padding:9px;font-size:13px;margin:8px 0}
+.selectpost{display:flex;align-items:center;gap:10px;font-size:14px}.selectpost input{width:24px;height:24px}.bulkbar{border:1px solid #ddd;padding:10px;border-radius:10px;margin:12px 0}.bulkbar button{min-height:44px}.danger{background:#ffe4e4;color:#a22}.warn{color:#a22}.reviewitem{display:flex;gap:10px;align-items:flex-start;border-top:1px solid #ddd;padding:12px 0;font-size:13px;font-weight:normal}.reviewitem input{width:24px;min-width:24px;height:24px;margin:2px 0}.reviewitem span{line-height:1.6;overflow-wrap:anywhere}.reviewbox{margin-top:12px;padding:12px;background:#fff9ed;border-radius:10px}.reviewbox button{min-height:44px}
+/* Ver.3.3: iPhone-first daily posting workflow */
+.today-card{border:2px solid #dbeafe}
+.today-summary{background:#eef4ff;color:#173e76;padding:11px 12px;border-radius:10px;font-size:14px;font-weight:700;margin-bottom:8px}
+.today-date{color:#586a83;font-size:13px;font-weight:500;margin-left:6px}
+.today-post{padding:13px 0;border-bottom:1px solid #e1e7ef}
+.today-post:last-child{border-bottom:0}
+.today-post.is-done{opacity:.7}
+.today-meta{font-size:13px;font-weight:700;color:#334155;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.today-time{font-size:19px;font-weight:800;color:#1d4ed8}
+.today-body{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;margin:10px 0 12px;font-size:15px}
+.today-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.today-actions button{font-size:13px;padding:11px 5px;min-height:46px;overflow-wrap:anywhere}
+.today-actions .primary{margin-top:0}
+.today-actions .go{background:#e8eef9;color:#173e76}
+.today-actions .mark{background:#e6f6eb;color:#166534}
+.today-actions .revert{background:#eef2f7;color:#334155}
+.today-blank{color:#586a83;font-size:14px;padding:14px 0}
+.list-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 10px;margin:12px 0}
+.list-filters label{margin:0;font-size:12px;font-weight:700}
+.list-filters select,.list-filters input{margin-top:5px;min-height:45px;font-size:16px}
+.list-filters .search{grid-column:1/-1}
+.list-helper{font-size:12px;color:#586a83;margin:7px 0}
+.filter-reset{min-height:44px}
+#importStatus{scroll-margin-top:15px}
+@media(max-width:360px){.today-actions{grid-template-columns:1fr 1fr}.today-actions button:last-child{grid-column:1/-1}}
+
+.import-preview{margin-top:12px;background:#f8fafc;border:1px solid #d8e0eb;border-radius:10px;padding:12px}
+.import-preview[hidden]{display:none}
+.import-stats{font-size:14px;line-height:1.7;white-space:pre-wrap}
+.import-scroll{max-height:300px;overflow:auto;margin:8px 0}
+.import-line{border-bottom:1px solid #d8e0eb;padding:10px 0;font-size:13px}
+.import-line span{color:#52657c;font-size:12px}
+.import-line p{white-space:pre-wrap;overflow-wrap:anywhere;margin:6px 0}
+.import-step{font-size:13px;color:#516177;line-height:1.6}
+.import-status{font-size:14px;color:#205a38;white-space:pre-wrap;line-height:1.6}
+.import-status.error{color:#a22}
+.import-buttons{display:flex;gap:8px}
+.import-buttons button{flex:1;min-height:46px}
+#importFile{font-size:14px}
+
+/* Ver.3.4.2: paste input and app data usage */
+.paste342{border:1px solid #d8e3ef;background:#f9fbff;border-radius:12px;padding:14px;margin:15px 0}
+.paste342 h3{font-size:15px;margin:2px 0 8px}
+.paste342 textarea{min-height:128px;line-height:1.5}
+.paste342 .row{margin-top:8px}
+.paste342 .row button{min-height:48px}
+.paste342 .row .primary,.paste342 .row .secondary{margin-top:0}
+.paste342 .paste-tip342{font-size:12px;line-height:1.7;color:#536174}
+.paste-preview342{margin-top:10px}
+.paste-preview342[hidden]{display:none}
+.paste-samples342{max-height:260px;overflow:auto;margin:10px 0}
+.paste-entry342{border-top:1px solid #dbe2ec;padding:9px 0}
+.paste-entry342 strong{font-size:12px;color:#334155}
+.paste-entry342 p{font-size:13px;margin:5px 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.paste-error342{color:#a22!important}
+.storage342{white-space:pre-wrap;line-height:1.8;font-size:13px;color:#334155;background:#f3f6fa;border-radius:10px;padding:11px;margin-top:10px}
+.copy-dialog35{border:0;border-radius:14px;width:min(94vw,650px);max-height:85dvh;padding:18px;box-shadow:0 18px 65px #0005}.copy-dialog35::backdrop{background:#0008}.copy-dialog35 textarea{width:100%;height:min(48dvh,350px);font-size:16px;user-select:text;-webkit-user-select:text;background:#fff}.copy-dialog35 .row{margin-top:12px}.copy-dialog35 .row button{min-height:48px}.qa-dialog35{border:0;border-radius:16px;padding:20px;width:min(94vw,630px);max-height:88dvh;box-shadow:0 16px 64px #0005}
+.qa-dialog35::backdrop{background:#0008}.qa-dialog35 textarea{width:100%;min-height:230px;line-height:1.7;resize:vertical}
+.qa-dialog35 p{white-space:pre-wrap;overflow-wrap:anywhere}.qa-dialog35 .row button{min-height:48px}
+.qa-notice35{position:sticky;top:0;z-index:10;background:#e7f2ff;border:1px solid #6c90bf;color:#17345a;padding:14px;max-width:650px;margin:0 auto 8px;border-radius:8px;white-space:pre-wrap}.qa-notice35 button{float:right;padding:5px 9px}
+.copy-toast357{position:fixed;left:12px;right:12px;bottom:20px;z-index:110;max-width:630px;margin:0 auto;background:#174a35;color:white;border-radius:12px;padding:16px;font-size:16px;font-weight:bold;box-shadow:0 5px 18px #0004;text-align:center;pointer-events:none}
+.copy-toast357[hidden]{display:none}
+#chatLaunch357{display:none;width:100%;text-align:center;background:#e6f2ff;color:#0d3f85;text-decoration:none;border:2px solid #5083b5;border-radius:10px;padding:14px;font-size:17px;font-weight:700;margin-top:10px}
+
+/* v3.7 local reference library — optimized for iPhone */
+.ref-item37{border-top:1px solid #dbe3ee;padding:16px 0}
+.ref-item37:first-child{border-top:0}
+.ref-body37{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;margin:10px 0}
+.ref-note37{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:#536174;background:#f5f8fc;border-radius:8px;padding:10px}
+.ref-link37{display:inline-block;padding:9px 0;font-size:14px;color:#1d4ed8;font-weight:bold}
+.ref-actions37{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}
+.ref-actions37 button{margin:0;min-height:45px;font-size:13px;overflow-wrap:anywhere}
+.ref-actions37 button:nth-child(3){grid-column:1/-1}
+.ref-library37 textarea{line-height:1.65}
+.ref-library37 .ref-hint37{font-size:13px;line-height:1.7;color:#4b596d}
+.ref-library37 .row button{min-height:44px}
+#referenceUsageSummary37{white-space:pre-wrap;line-height:1.7;font-size:13px;color:#19538a;background:#eef6ff;border-radius:9px;padding:11px;margin:10px 0}
+#referenceList37{max-height:800px;overflow:auto}
+@media(min-width:560px){.ref-actions37{grid-template-columns:repeat(3,minmax(0,1fr))}.ref-actions37 button:nth-child(3){grid-column:auto}}
+</style>
+</head>
+<body>
+<header>
+<h1>🧪 SNS投稿管理 Ver.3.7 参考投稿テスト</h1>
+<p>X・Threadsの投稿管理、履歴の重複防止、バックアップ。データはこの端末のブラウザ内に保存されます。</p>
+</header>
+<section id="copyPanel356" class="card" hidden aria-label="コピー用の文章" style="border:2px solid #3575aa;margin:12px auto;max-width:650px"><h2 id="copyTitle356">コピー用文章</h2><p id="copyStatus356" class="help" role="status"></p><textarea id="copyField356" rows="8" readonly aria-label="コピー用テキスト" style="min-height:190px;user-select:text;-webkit-user-select:text"></textarea><div class="row"><button type="button" class="primary" onclick="retryCopy356()">コピーする</button><a id="chatLink356" href="https://chatgpt.com/" target="_blank" rel="noopener" style="display:none;padding:14px;font-weight:bold">ChatGPTを開く ↗</a></div></section><div id="notice35" class="qa-notice35" role="status" hidden><button type="button" onclick="document.getElementById('notice35').hidden=true" aria-label="お知らせを閉じる">×</button><span id="noticeMessage35"></span></div>
+<dialog id="actionDialog35" class="qa-dialog35" aria-label="確認"><h2>内容を確認</h2><p id="actionMessage35"></p><div id="actionPhraseBox35" hidden><label for="actionPhrase35">確認用の言葉を入力</label><input id="actionPhrase35" type="text" autocomplete="off"></div><div class="row"><button id="actionOk35" type="button" class="primary">実行する</button><button id="actionCancel35" type="button" class="secondary">キャンセル</button></div></dialog>
+<dialog id="editDialog35" class="qa-dialog35" aria-label="投稿を編集"><h2>投稿本文を編集</h2><p class="help" id="editMeta35"></p><textarea id="editField35" rows="10" spellcheck="true" aria-label="編集する投稿本文"></textarea><div class="row"><button type="button" class="primary" onclick="saveEdit35()">変更を保存</button><button type="button" class="secondary" onclick="cancelEdit35()">編集をキャンセル</button></div></dialog>
+<div id="copyToast357" class="copy-toast357" role="status" aria-live="polite" hidden>✓ コピーしました</div><main>
+<section class="card" style="border:2px solid #39669c;background:#f0f6ff">
+<strong>🧪 Ver.3.7 テスト専用ページ</strong>
+<p class="help">通常版Ver.3.6の投稿・履歴とは完全に保存領域を分けています。ここには本番の投稿文や個人情報を入力せず、架空の参考投稿で操作を試してください。</p>
+</section>
+
+<section class="card today-card" id="todaySection">
+<h2>📌 今日の投稿 <span id="todayDate" class="today-date"></span></h2>
+<p class="help">※このページを開いている間の画面内通知です。閉じた状態のiPhoneプッシュ通知には対応していません。</p>
+
+<div id="todaySummary" class="today-summary" role="status"></div>
+<div id="todayPosts"></div>
+<p class="help">①本文コピー → ②投稿先を開く → 投稿後に③投稿済み。送信は自分で確認して行います。</p>
+</section>
+<section class="card">
+<h2>✨ AIで1週間分の投稿を作る</h2>
+<div class="pill">カイ・後輩くん・漫画恋愛 各14本 ／ 合計42本<br>毎日12:00・20:00 ／ API追加料金0円</div>
+<label for="weekstart">投稿を始める日</label><input type="date" id="weekstart">
+<label for="destination">投稿先</label><select id="destination"><option>X</option><option>Threads</option></select>
+<label for="generationBatch">生成する本数</label><select id="generationBatch"><option value="all">全42本まとめて（従来どおり）</option><option value="kai">カイ14本</option><option value="kouhai">後輩くん14本</option><option value="manga">漫画・恋愛14本</option></select>
+<p class="help">42本で文章が途切れる場合は、各アカウント14本ずつ生成・登録できます。途中まで登録しても既存の投稿は消えません。</p>
+<p id="referenceUsageSummary37" role="status">参考投稿ライブラリを読み込み中...</p>
+<button class="primary" onclick="generatePrompt()">① 生成指示をコピー</button>
+<a id="chatLaunch357" href="https://chatgpt.com/" target="_blank" rel="noopener">② ChatGPTを開く ↗</a>
+<p id="chatHelp357" class="help">生成指示をコピーすると、ChatGPTを開くボタンが表示されます。</p>
+<p class="help">ChatGPTに貼り付けて送信してください。返答はJSON形式で受け取り、下の欄に貼り付けます。14本／28本／42本に対応。自動送信やAPI呼び出しは行いません。</p>
+<label for="jsonImport">② ChatGPTの生成結果（JSON）</label>
+<textarea class="smallarea" id="jsonImport" placeholder='[{"account":"カイ","date":"2026-10-12T12:00","content":"投稿文"}, ...]'></textarea>
+<button class="secondary" onclick="pasteGeneratedJson()">📋 クリップボードからJSONを貼り付ける</button>
+<button class="primary" onclick="importPosts()">③ 内容を確認して一括登録</button>
+<p class="status" id="importStatus" role="status"></p><div id="importReview" aria-live="polite"></div>
+</section>
+<section class="card ref-library37" id="referenceLibrary37">
+<h2>💡 参考投稿ライブラリ</h2>
+<p class="ref-hint37">X・Threadsなどで気に入った投稿の本文を保存し、良かった点をAIで分析して自分の投稿に応用できます。<b>文章の転載・言い換えではなく、構成や読者心理だけを参考にします。</b></p>
+<p class="ref-hint37">外部SNSのURLから本文を自動取得する機能はありません。本文をコピーして貼り付けてください。データはこのブラウザ内に保存され、バックアップにも含まれます。</p>
+<label for="refAccount37">どの企画の参考にする？</label>
+<select id="refAccount37"><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option><option>共通</option></select>
+<label for="refSource37">参考投稿の掲載先</label>
+<select id="refSource37"><option>X</option><option>Threads</option><option>その他</option></select>
+<label for="refUrl37">元の投稿URL（任意）</label>
+<input id="refUrl37" type="url" inputmode="url" autocomplete="off" placeholder="https://...">
+<label for="refContent37">参考投稿の本文（必須・3,000文字以内）</label>
+<textarea id="refContent37" maxlength="3000" rows="6" placeholder="気に入った投稿の本文をコピーして貼り付け"></textarea>
+<label for="refNote37">どこが良いと思った？（任意・500文字以内）</label>
+<textarea id="refNote37" maxlength="500" rows="3" placeholder="例：冒頭が気になる／読者の不安を言語化している／話の展開が上手い"></textarea>
+<div class="row">
+<button id="refSave37" type="button" class="primary" onclick="saveReference37()">参考投稿を保存</button>
+<button id="refCancelEdit37" type="button" class="secondary" onclick="referenceResetForm37()" hidden>編集をキャンセル</button>
+</div>
+<p id="refStatus37" class="status" role="status" aria-live="polite"></p>
+<div class="pill" style="margin-top:15px">
+<strong>保存した参考投稿</strong>
+<p id="refCount37" class="help">読み込み中...</p>
+<p class="help">「＋ 生成に使う」を押した参考投稿だけを、次回の14本・42本生成指示に反映します。各企画最大5件、★の投稿を優先します。対象が「共通」の参考投稿は全企画に使えます。</p>
+</div>
+<label for="refFilter37">企画で絞り込み</label>
+<select id="refFilter37" onchange="renderReferenceLibrary37()"><option>すべて</option><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option><option>共通</option></select>
+<label for="refSearch37">参考投稿を検索</label>
+<input id="refSearch37" type="search" placeholder="本文・メモ・URLのキーワード" oninput="renderReferenceLibrary37()">
+<div id="referenceList37" aria-live="polite"></div>
+<a href="https://chatgpt.com/" target="_blank" rel="noopener" id="refChatLink37" class="ref-link37">分析指示を貼り付ける：ChatGPTを開く ↗</a>
+<p id="refAnalysisHint37" class="help" aria-live="polite">参考投稿の「AI分析指示をコピー」を押し、ChatGPTに貼り付けて分析できます。</p>
+</section>
+<section class="card">
+<h2>新しい投稿</h2>
+<label>アカウント</label>
+<select id="account">
+<option>カイ</option>
+<option>後輩くん</option>
+<option>漫画・恋愛</option>
+</select>
+<label>投稿先</label>
+<select id="platform">
+<option>X</option>
+<option>Threads</option>
+</select>
+<label>投稿予定日時</label>
+<input type="datetime-local" id="date">
+<label>投稿本文</label>
+<textarea id="content" placeholder="投稿文を入力してください"></textarea>
+<button class="primary" onclick="savePost()">投稿を保存</button>
+</section>
+<section class="card" id="historyImporter">
+<h2>📥 X・Threadsの過去投稿を取り込む</h2>
+<p class="import-step">公式アーカイブ（ZIP）または投稿データ（JSON・JS・CSV・TXT）を選び、プレビューを確認してから登録します。<b>投稿予定には追加されません。</b> ファイル内容は端末内で読み取ります。</p>
+<label for="importSource">投稿元SNS</label><select id="importSource"><option value="X">X</option><option value="Threads">Threads</option></select>
+<label for="importAccount">履歴を保存する企画</label><select id="importAccount"><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option></select>
+<label for="importFile">過去投稿データのファイル</label>
+<input id="importFile" type="file" accept=".zip,.json,.js,.csv,.txt,application/zip,application/json,text/plain,text/csv" onchange="prepareHistoryImport()">
+<p class="import-step">XのZIPが大きい場合は、解凍した「data/tweets.js」を選ぶと軽く処理できます。ZIPの読み込みには初回だけ外部のZIP展開用ライブラリを取得します。DM・いいね・プロフィール等のファイルは取り込みません。</p>
+<div id="importStatus34" role="status" class="import-status"></div>
+<div id="importPreview34" class="import-preview" hidden></div>
+</section>
+<section class="card">
+<h2>データのバックアップ</h2>
+<div class="paste342" id="historyPasteCard342">
+<h3>📋 ChatGPTの過去投稿を直接貼り付け</h3>
+<p class="paste-tip342">JSON配列、過去に保存したバックアップJSON、または1本の通常の文章に対応します。ファイルをダウンロードする必要はありません。</p>
+<label for="pasteAccount342">企画（本文に企画指定がない場合）</label>
+<select id="pasteAccount342"><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option></select>
+<label for="pasteHistory342">過去投稿の文章・JSON</label>
+<textarea id="pasteHistory342" placeholder='[{"account":"カイ","content":"過去の投稿文"},{"account":"後輩くん","content":"別の投稿文"}]'></textarea>
+<div class="row">
+<button class="secondary" type="button" onclick="pasteClipboardHistory342()">📋 クリップボードから貼り付け</button>
+<button class="primary" type="button" onclick="previewPastedHistory342()">① 内容を確認</button>
+</div>
+<p class="paste-tip342">自動貼り付けできない場合は入力欄を長押しして「ペースト」。履歴のみに保存し、投稿予定には追加しません。実際に投稿済みかどうかは判定しません。</p>
+<p id="pasteStatus342" class="status" role="status"></p>
+<div id="pastePreview342" class="paste-preview342" hidden></div>
+</div>
+
+<p class="help">投稿一覧と重複防止履歴を一緒に保存します。機種変更やブラウザデータ消去に備えて、定期的に保存してください。旧Ver.1形式も復元できます。</p>
+<div class="row"><button class="secondary" onclick="exportBackup()">バックアップを保存</button><button class="secondary" onclick="document.getElementById('restoreFile').click()">バックアップを復元</button></div>
+<input type="file" id="restoreFile" accept=".json,application/json" style="display:none" onchange="restoreBackup(event)">
+<p id="backupHistoryCount" class="help" aria-live="polite">履歴件数を確認中...</p>
+<p id="backupStatus" class="status" role="status" aria-live="polite"></p>
+<h3 style="font-size:15px;margin:14px 0 8px">保存容量の確認</h3>
+<div id="storageUsage342" class="storage342" aria-live="polite">保存容量を確認中...</div>
+</section>
+<section class="card">
+<h2>投稿一覧</h2>
+<div class="list-filters">
+<label for="listAccount">アカウント
+<select id="listAccount" onchange="changeListFilters()"><option value="all">すべて</option><option value="カイ">カイ</option><option value="後輩くん">後輩くん</option><option value="漫画・恋愛">漫画・恋愛</option></select>
+</label>
+<label for="listPlatform">投稿先
+<select id="listPlatform" onchange="changeListFilters()"><option value="all">すべて</option><option value="X">X</option><option value="Threads">Threads</option></select>
+</label>
+<label for="listPeriod">期間
+<select id="listPeriod" onchange="changeListFilters()"><option value="all">すべて</option><option value="today">今日</option></select>
+</label>
+<label for="listSearch" class="search">本文検索
+<input id="listSearch" type="search" placeholder="投稿文のキーワード" oninput="changeListFilters()">
+</label>
+</div>
+<p class="list-helper">下の「すべて・未投稿・投稿済み」と組み合わせて絞り込めます。</p>
+<button type="button" class="secondary filter-reset" onclick="resetListFilters()">絞り込みを解除する</button>
+<p id="listCount" class="list-helper" aria-live="polite"></p>
+<div class="row"><button class="secondary" onclick="filterPosts('all')">すべて</button><button class="secondary" onclick="filterPosts('pending')">未投稿</button><button class="secondary" onclick="filterPosts('done')">投稿済み</button></div>
+<div class="bulkbar"><div class="row"><button class="secondary" onclick="selectVisible(true)">表示中を全選択</button><button class="secondary" onclick="selectVisible(false)">選択解除</button></div><p id="selectedCount">選択中：0件</p><div class="row"><button class="secondary" onclick="bulkDone(true)">選択を投稿済みに</button><button class="secondary" onclick="bulkDone(false)">選択を未投稿に</button></div><div class="row"><button class="danger" onclick="bulkDelete()">選択を削除</button><button class="danger" onclick="clearAll()">全部消去</button></div><p class="help warn">削除前にバックアップを保存してください。削除しても重複防止用の投稿履歴は残ります。</p></div><div id="posts"></div>
+</section>
+</main>
+<script>
+const key="sns-post-manager-test-reference-v37";
+const historyKey="sns-post-manager-history-test-reference-v37";
+const referenceKey="sns-post-manager-references-test-v37";
+let posts=[];let history=[];let references=[];let currentFilter="all";const selected=new Set();let pendingImport=null;
+try{posts=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(posts))posts=[]}catch(e){posts=[]}
+try{history=JSON.parse(localStorage.getItem(historyKey)||"[]");if(!Array.isArray(history))history=[]}catch(e){history=[]}
+try{references=JSON.parse(localStorage.getItem(referenceKey)||"[]");if(!Array.isArray(references))references=[]}catch(e){references=[]}
+function norm(t){return String(t||"").normalize("NFKC").replace(/\s+/g,"").replace(/[。、！？!?,.「」『』"'’‘“”・:：;；]/g,"").toLowerCase()}
+// Account + destination + normalized text identify a saved post.
+// Legacy rows without a platform remain preserved as a separate "unknown" group.
+function historyIdentity(p){
+ return JSON.stringify([p.account||"",p.platform||"不明",norm(p.content)]);
+}
+function uiInfo35(message){
+ const notice=document.getElementById("notice35");
+ document.getElementById("noticeMessage35").textContent=String(message);
+ notice.hidden=false;
+}
+function uiConfirm35(message,requiredPhrase=""){
+ return new Promise(resolve=>{
+  const dialog=document.getElementById("actionDialog35");
+  const yes=document.getElementById("actionOk35"),no=document.getElementById("actionCancel35");
+  const phrase=document.getElementById("actionPhrase35");
+  document.getElementById("actionMessage35").textContent=String(message);
+  document.getElementById("actionPhraseBox35").hidden=!requiredPhrase;
+  phrase.value="";yes.disabled=!!requiredPhrase;
+  const update=()=>{yes.disabled=!!requiredPhrase&&phrase.value!==requiredPhrase};
+  const finish=(ok)=>{
+   dialog.removeEventListener("cancel",escape);
+   phrase.removeEventListener("input",update);
+   yes.onclick=null;no.onclick=null;
+   if(dialog.open&&dialog.close)dialog.close();else dialog.removeAttribute("open");
+   resolve(ok);
+  };
+  const escape=e=>{e.preventDefault();finish(false)};
+  dialog.addEventListener("cancel",escape);phrase.addEventListener("input",update);
+  yes.onclick=()=>finish(true);no.onclick=()=>finish(false);
+  if(dialog.showModal)dialog.showModal();else dialog.setAttribute("open","");
+  if(requiredPhrase)phrase.focus();else no.focus();
+ });
+}
+function addHistory(entries){
+ const seen=new Set(history.filter(h=>h&&typeof h.content==="string").map(historyIdentity));
+ for(const p of entries){if(!p||typeof p.content!=="string"||!p.content.trim()||typeof p.account!=="string")continue;
+ const code=historyIdentity(p);
+ if(!seen.has(code)){history.push({account:p.account,platform:p.platform||"不明",content:p.content,date:p.date||""});seen.add(code)}
+ }
+}
+addHistory(posts);
+function persist(){
+ const previousHistory=history.slice();
+ let storedPosts=null,storedHistory=null,storedReferences=null,snapshotTaken=false,rollbackFailed=false;
+ try{
+ storedPosts=localStorage.getItem(key);
+ storedHistory=localStorage.getItem(historyKey);
+ storedReferences=localStorage.getItem(referenceKey);
+ snapshotTaken=true;
+ addHistory(posts);
+ localStorage.setItem(key,JSON.stringify(posts));
+ localStorage.setItem(historyKey,JSON.stringify(history));
+ localStorage.setItem(referenceKey,JSON.stringify(references));
+ return true;
+ }catch(e){
+ history=previousHistory;
+ if(snapshotTaken){
+  try{
+   if(storedPosts===null)localStorage.removeItem(key);else localStorage.setItem(key,storedPosts);
+   if(storedHistory===null)localStorage.removeItem(historyKey);else localStorage.setItem(historyKey,storedHistory);
+   if(storedReferences===null)localStorage.removeItem(referenceKey);else localStorage.setItem(referenceKey,storedReferences);
+  }catch(rollbackError){rollbackFailed=true}
+ }
+ uiInfo35("保存できませんでした。ブラウザの保存設定や空き容量を確認してください。"+(rollbackFailed?" 保存状態を確認し、バックアップから復元してください。":""));
+ return false;
+ }
+}
+function grams(s,n){const out=new Set();for(let i=0;i<=s.length-n;i++)out.add(s.slice(i,i+n));return out}
+function dice(a,b){if(!a.size||!b.size)return 0;let common=0;for(const t of a)if(b.has(t))common++;return 2*common/(a.size+b.size)}
+function similarity(a,b){
+ if(a===b)return 1;
+ if(a.length<6||b.length<6)return 0;
+ const lengthRatio=Math.min(a.length,b.length)/Math.max(a.length,b.length);
+ if(lengthRatio<0.55)return 0;
+ return .4*dice(grams(a,2),grams(b,2))+.6*dice(grams(a,3),grams(b,3));
+}
+function findCollision(item,extra=[],excludeId=null){
+ const n=norm(item.content);if(!n)return null;
+ let best=null;
+ for(const ref of posts.concat(history,extra)){
+ if(!ref||typeof ref.content!=="string"||(excludeId!==null&&ref.id===excludeId))continue;
+ const other=norm(ref.content);
+ // Reposting the same text to X and Threads is intentional.
+ if(ref.account!==item.account||ref.platform!==item.platform)continue;
+ if(n===other)return {kind:"exact",ref,score:1};
+ const score=similarity(n,other);
+ if(score>=(n.length<20?.78:.66)&&(!best||score>best.score))best={kind:"similar",ref,score};
+ }
+ return best;
+}
+async function savePost(){
+ const content=document.getElementById("content").value.trim();
+ if(!content){uiInfo35("投稿文を入力してください");return}
+ const account=document.getElementById("account").value;
+ const platform=document.getElementById("platform").value;
+ const match=findCollision({account,platform,content});
+ if(match?.kind==="exact"){uiInfo35("投稿履歴に同じ本文があります。登録しませんでした。");return}
+ if(match?.kind==="similar"&&!await uiConfirm35("過去に似た文章があります（類似度約"+Math.round(match.score*100)+"%）。\n"+match.ref.content.slice(0,90)+"\n\nそれでも登録しますか？"))return;
+ const item={id:Date.now()+"-"+Math.random(),account,platform:document.getElementById("platform").value,date:document.getElementById("date").value,content,done:false};
+ posts.push(item);
+ if(!persist()){posts.pop();return}
+ document.getElementById("content").value="";
+ render();
+}
+let pendingCopyText356="";
+let copyToastTimer357=null;
+function showCopySuccess357(){
+ const toast=document.getElementById("copyToast357");
+ toast.textContent="✓ コピーしました";
+ toast.hidden=false;
+ if(copyToastTimer357!==null)clearTimeout(copyToastTimer357);
+ copyToastTimer357=setTimeout(()=>{toast.hidden=true;copyToastTimer357=null},2700);
+}
+function showChatLaunch357(){
+ const link=document.getElementById("chatLaunch357");
+ link.style.display="block";
+ document.getElementById("chatHelp357").textContent="コピーしました。次は「② ChatGPTを開く」を押して、生成指示を貼り付けてください。";
+}
+function showCopyPanel356(value,title,chat=false){
+ pendingCopyText356=String(value);
+ const panel=document.getElementById("copyPanel356");
+ document.getElementById("copyTitle356").textContent=title;
+ document.getElementById("copyField356").value=pendingCopyText356;
+ document.getElementById("chatLink356").style.display=chat?"inline-block":"none";
+ document.getElementById("copyStatus356").textContent="コピーを実行します。うまくいかない場合は「コピーする」をもう一度押してください。";
+ panel.hidden=false;
+}
+function copyTextLegacy356(value){
+ try{
+  // Called synchronously within the click event for iOS gesture permission.
+  const field=document.getElementById("copyField356");
+  field.value=String(value);
+  field.focus();
+  field.select();
+  field.setSelectionRange(0,field.value.length);
+  return document.execCommand("copy")===true;
+ }catch(e){return false}
+}
+function doCopy356(value,title,chat=false){
+ showCopyPanel356(value,title,chat);
+ const ok=copyTextLegacy356(value);
+ if(ok){
+  document.getElementById("copyStatus356").textContent="コピーしました。メモなどに貼り付けて確認してください。";
+  document.getElementById("copyPanel356").hidden=true;
+  showCopySuccess357();
+  if(chat)showChatLaunch357();
+  return;
+ }
+ // Async Clipboard API is attempted while the direct click still owns activation.
+ try{
+  if(navigator.clipboard?.writeText && window.isSecureContext){
+   navigator.clipboard.writeText(String(value)).then(()=>{
+    document.getElementById("copyStatus356").textContent="コピーしました。メモなどに貼り付けて確認してください。";
+    document.getElementById("copyPanel356").hidden=true;
+    showCopySuccess357();
+    if(chat)showChatLaunch357();
+   }).catch(()=>{
+    document.getElementById("copyStatus356").textContent="自動コピーできません。「コピーする」を押してください。";
+   });
+  }
+ }catch(e){}
+}
+function retryCopy356(){doCopy356(pendingCopyText356,document.getElementById("copyTitle356").textContent,document.getElementById("chatLink356").style.display!=="none")}
+function copyPost(id){
+ const p=posts.find(x=>x.id===id);if(!p)return;
+ doCopy356(p.content,"投稿本文をコピー",false);
+}
+function fallbackCopy(text){doCopy356(text,"投稿本文をコピー",false)}
+function openPlatform(id){
+const p=posts.find(x=>x.id===id);
+if(!p)return;
+window.open(p.platform==="X"?"https://x.com/compose/post":"https://www.threads.net/","_blank","noopener");
+}
+function toggleDone(id){
+const p=posts.find(x=>x.id===id);
+if(!p)return;
+const before=p.done;
+p.done=!p.done;
+if(!persist())p.done=before;
+render();
+}
+async function deletePost(id){
+if(!await uiConfirm35("この投稿を削除しますか？"))return;
+const before=posts;
+posts=posts.filter(x=>x.id!==id);
+if(!persist())posts=before;
+render();
+}
+function filterPosts(mode){currentFilter=mode;render()}
+let editingId35=null;
+function editPost(id){
+ const p=posts.find(x=>x.id===id);if(!p)return;
+ editingId35=id;
+ document.getElementById("editMeta35").textContent=p.account+" ／ "+p.platform+" ／ "+(p.date||"日時未設定");
+ const field=document.getElementById("editField35");field.value=p.content;
+ const dialog=document.getElementById("editDialog35");
+ if(dialog.showModal)dialog.showModal();else dialog.setAttribute("open","");
+ field.focus();field.setSelectionRange(field.value.length,field.value.length);
+}
+function cancelEdit35(){
+ editingId35=null;
+ const dialog=document.getElementById("editDialog35");
+ if(dialog.open&&dialog.close)dialog.close();else dialog.removeAttribute("open");
+}
+async function saveEdit35(){
+ const p=posts.find(x=>x.id===editingId35);
+ if(!p){cancelEdit35();return}
+ const content=document.getElementById("editField35").value.trim();
+ if(!content){uiInfo35("本文は空にできません");return}
+ if(norm(content)!==norm(p.content)){
+  const match=findCollision({account:p.account,platform:p.platform,content},[],p.id);
+  if(match?.kind==="exact"){uiInfo35("同じSNSの投稿履歴に同じ本文があります。編集しませんでした。");return}
+  if(match?.kind==="similar"&&!await uiConfirm35("同じSNSの投稿履歴に似た文章があります。\n"+match.ref.content.slice(0,100)+"\n\n編集を続けますか？"))return;
+ }
+ const old=p.content;p.content=content;
+ if(!persist()){p.content=old;return}
+ cancelEdit35();render();uiInfo35("投稿本文を保存しました。");
+}
+function localDay(date,offset){const d=new Date(date+"T12:00:00");d.setDate(d.getDate()+offset);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
+function generatePrompt(){
+const start=document.getElementById("weekstart").value;if(!start){uiInfo35("開始日を選んでください");return}
+const platform=document.getElementById("destination").value;
+const allSlots=[];for(const account of ["カイ","後輩くん","漫画・恋愛"]){for(let day=0;day<7;day++){for(const time of ["12:00","20:00"]){allSlots.push({account,platform,date:localDay(start,day)+"T"+time})}}}
+const batch=document.getElementById("generationBatch").value;
+const batchAccount={kai:"カイ",kouhai:"後輩くん",manga:"漫画・恋愛"}[batch]||null;
+const slots=batchAccount?allSlots.filter(s=>s.account===batchAccount):allSlots;
+const recentHistory=history.filter(p=>!batchAccount||p.account===batchAccount).slice(-150).map(p=>({account:p.account,content:p.content}));
+const instruction="過去投稿との重複防止が最優先です。末尾の過去投稿履歴を確認し、文章の言い換えだけでなく、主張・題材・例・冒頭のフックが似ている投稿も避けてください。毎週、新しい問題提起・視点・具体例を選んでください。次の"+slots.length+"枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けに、14本あたり実用・共感8本、後輩くん制作物語の紹介4本、無料のSNS投稿管理アプリの開発状況と自然な案内2本を目安に構成する。実在する配布URLは入力されていないので架空のURLを絶対に作らず、未公開アプリを「配布中」と断定しない。後輩くんは初心者の成長を描くフィクション企画。2つ目の副業としてLINEスタンプを作る連載を進める。キャラクター統一、透過、切り抜き、連番保存、検品など実際に確認できた制作工程を物語に生かし、連載の時系列を守る。「カイが後輩くんのためにツールを作った」という設定を使う場合はフィクションと分かる表現にし、架空の売上や実績を現実の事実として断定しない。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。"+slots.length+"個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
+const fullInstruction=instruction+referencePrompt37(batchAccount)+"\n過去の投稿履歴（直近最大150件。表現だけでなく題材の重複も避ける）:"+JSON.stringify(recentHistory);
+document.getElementById("chatLaunch357").style.display="none";
+doCopy356(fullInstruction,"生成指示をコピーしてChatGPTに貼る",true)
+}
+function importPosts(){
+ const status=document.getElementById("importStatus");
+ const area=document.getElementById("importReview");area.replaceChildren();pendingImport=null;
+ const original=document.getElementById("jsonImport").value.trim();
+ let raw=original.replace(/^\x60{3}(?:json)?\s*/i,"").replace(/\s*\x60{3}$/,"");
+ let items;try{items=JSON.parse(raw)}catch(e){status.textContent="JSON形式を確認してください。途中で切れている場合はChatGPTに続きを依頼してください。";return}
+ if(!Array.isArray(items)||![14,28,42].includes(items.length)){status.textContent="14本・28本・42本のJSON配列が必要です。現在："+(Array.isArray(items)?items.length:"配列ではありません")+"本";return}
+ const allowed=["カイ","後輩くん","漫画・恋愛"];const start=document.getElementById("weekstart").value;const platform=document.getElementById("destination").value;
+ if(!start){status.textContent="開始日を選んでください";return}
+ const expected=new Set();for(const a of allowed)for(let i=0;i<7;i++)for(const t of ["12:00","20:00"])expected.add(a+"|"+localDay(start,i)+"T"+t);
+ const seen=new Set();const counts=new Map();
+ for(const item of items){
+ if(!item||!allowed.includes(item.account)||item.platform!==platform||typeof item.date!=="string"||typeof item.content!=="string"||!item.content.trim()){status.textContent="アカウント・投稿先・日時・本文に不正な値があります。";return}
+ const slot=item.account+"|"+item.date;
+ if(!expected.has(slot)||seen.has(slot)){status.textContent="日時・アカウントに重複か指定外の値があります。";return}
+ seen.add(slot);
+ counts.set(item.account,(counts.get(item.account)||0)+1);
+ }
+ if([...counts.values()].some(n=>n!==14)){status.textContent="分割取り込みはアカウントごとに14本（7日×昼夜）にしてください。";return}
+ const existing=new Set(posts.map(p=>p.account+"|"+p.platform+"|"+p.date));
+ const staged=[];const candidates=[];let duplicateDates=0,exact=0,nearCount=0;
+ for(const item of items){
+ if(existing.has(item.account+"|"+item.platform+"|"+item.date)){duplicateDates++;continue}
+ const match=findCollision(item,staged);
+ if(match?.kind==="exact"){exact++;continue}
+ const near=match?.kind==="similar"?match:null;
+ if(near)nearCount++;
+ const copy={account:item.account,platform:item.platform,date:item.date,content:item.content.trim()};
+ candidates.push({item:copy,near});
+ staged.push(copy);
+ }
+ pendingImport={original,start,platform,candidates,duplicateDates,exact,nearCount};
+ const cleanCount=candidates.length-nearCount;
+ status.textContent="確認結果：新規"+cleanCount+"本・類似"+nearCount+"本・完全一致"+exact+"本・日時重複"+duplicateDates+"本。\n類似投稿は初期状態で登録対象から外しています。";
+ const box=document.createElement("div");box.className="reviewbox";
+ const title=document.createElement("p");title.textContent="登録する投稿を確認してください。類似候補を登録したい場合だけチェックを付けてください。";box.appendChild(title);
+ candidates.forEach((candidate,index)=>{
+ if(!candidate.near)return;
+ const label=document.createElement("label");label.className="reviewitem";
+ const check=document.createElement("input");check.type="checkbox";check.dataset.candidateIndex=String(index);
+ const note=document.createElement("span");
+ note.textContent=candidate.item.account+"／"+candidate.item.date.replace("T"," ")+"　類似度約"+Math.round(candidate.near.score*100)+"%\n新規："+candidate.item.content+"\n過去："+candidate.near.ref.content;
+ note.style.whiteSpace="pre-wrap";
+ label.append(check,note);box.appendChild(label);
+ });
+ const button=document.createElement("button");button.className="primary";button.textContent="確認した投稿を登録";button.onclick=finishImport;box.appendChild(button);
+ area.appendChild(box);
+}
+async function finishImport(){
+ if(!pendingImport)return;
+ const area=document.getElementById("importReview");const status=document.getElementById("importStatus");
+ const preview=pendingImport;
+ if(document.getElementById("jsonImport").value.trim()!==preview.original||document.getElementById("weekstart").value!==preview.start||document.getElementById("destination").value!==preview.platform){status.textContent="入力が変更されました。もう一度「③ 内容を確認して一括登録」を押してください。";area.replaceChildren();pendingImport=null;return}
+ const selectedNear=new Set(Array.from(area.querySelectorAll("input[data-candidate-index]:checked"),el=>Number(el.dataset.candidateIndex)));
+ const chosen=preview.candidates.filter((c,i)=>!c.near||selectedNear.has(i)).map(c=>c.item);
+ const count=chosen.length;
+ if(!count){status.textContent="登録する投稿がありません。";return}
+ if(!await uiConfirm35(count+"本を登録します。除外：類似"+(preview.nearCount-selectedNear.size)+"本、完全一致"+preview.exact+"本、日時重複"+preview.duplicateDates+"本。よろしいですか？"))return;
+ const existing=new Set(posts.map(p=>p.account+"|"+p.platform+"|"+p.date));
+ const added=[];
+ for(const p of chosen){
+ const slot=p.account+"|"+p.platform+"|"+p.date;
+ if(existing.has(slot)||findCollision(p,added)?.kind==="exact")continue;
+ added.push({...p,id:Date.now()+"-"+Math.random(),done:false});existing.add(slot);
+ }
+ const old=posts;posts=posts.concat(added);
+ if(!persist()){posts=old;status.textContent="保存に失敗しました";return}
+ status.textContent=added.length+"本を登録しました（重複"+(chosen.length-added.length)+"本を追加で除外）。類似判定は文章の近さによる目安です。";
+ document.getElementById("jsonImport").value="";area.replaceChildren();pendingImport=null;render();
+}
+function exportBackup(){
+ const status=document.getElementById("backupStatus");
+ let url=null;
+ try{
+  // Keep the legacy schema compatible with existing restore functionality.
+  const payload={version:5,exportedAt:new Date().toISOString(),posts,history,references};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
+  url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="sns-post-manager-backup-"+new Date().toISOString().slice(0,10)+".json";
+  a.style.display="none";
+  document.body.appendChild(a);
+  try{a.click()}finally{a.remove()}
+  status.textContent="バックアップのダウンロードを開始しました。投稿"+posts.length+"件・履歴"+history.length+"件・参考投稿"+references.length+"件。必ずiPhoneの「ファイル」でJSONが保存されたか確認してください（画面表示だけでは保存成功は保証できません）。";
+ }catch(e){
+  status.textContent="ダウンロードを開始できませんでした。ブラウザの設定・ダウンロード先を確認してください。詳細："+String(e?.message||e);
+ }finally{
+  // Do not revoke immediately: download initiation can be deferred on iOS.
+  if(url)setTimeout(()=>URL.revokeObjectURL(url),60000);
+ }
+}
+function refreshBackupStatus(){
+ const label=document.getElementById("backupHistoryCount");
+ if(label)label.textContent="保存されている重複防止履歴："+history.length+"件 ／ 投稿予定："+posts.length+"件 ／ 参考投稿："+references.length+"件";
+}
+async function restoreBackup(e){
+ const file=e.target.files[0];
+ if(!file)return;
+ const status=document.getElementById("backupStatus");
+ status.textContent="";
+ try{
+  if(file.size>25*1024*1024)throw Error("25MBを超えるJSONは分割して取り込んでください");
+  const data=JSON.parse(await file.text());
+  const arr=Array.isArray(data)?data:data?.posts;
+  if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("投稿データの形式が違います");
+  const extra=Array.isArray(data.history)?data.history:[];
+  if(!extra.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"))throw Error("履歴の形式が違います");
+  if(data.references!==undefined&&!Array.isArray(data.references))throw Error("参考投稿の形式が違います");
+  const importedRefs=Array.isArray(data.references)?data.references:[];
+  if(importedRefs.length>500)throw Error("1回の復元で読み込める参考投稿は最大500件です。");
+  const cleaned=importedRefs.map(r=>normalizeReference37(r,true));
+  const knownRefIds=new Set(references.map(r=>String(r.id)));
+  const stagedRefs=references.slice();
+  for(const r of cleaned){
+   if(knownRefIds.has(String(r.id))||referenceDuplicate37(r,null,stagedRefs))continue;
+   if(stagedRefs.length>=500)throw Error("参考投稿が500件を超えるため復元できません。");
+   stagedRefs.push(r);knownRefIds.add(String(r.id));
+  }
+  const knownIds=new Set(posts.map(p=>String(p.id)));
+  const newPostCount=arr.filter(p=>!knownIds.has(String(p.id))).length;
+  const knownHistory=new Set(history.map(historyIdentity));
+  const newHistoryCount=extra.filter(p=>!knownHistory.has(historyIdentity(p))).length;
+  const newReferenceCount=stagedRefs.length-references.length;
+  const label="ファイル："+file.name+
+   "\n内容：投稿"+arr.length+"件・履歴"+extra.length+"件・参考投稿"+importedRefs.length+"件"+
+   "\n現在の画面に追加される見込み：投稿"+newPostCount+"件・履歴"+newHistoryCount+"件・参考投稿"+newReferenceCount+"件。"+
+   "\n\n復元しますか？（過去のVer.3.6以前のバックアップも読み込めます）";
+  if(!await uiConfirm35(label)){status.textContent="復元をキャンセルしました。既存データに変更はありません。";return}
+  const oldPosts=posts,oldHistory=history.slice(),oldReferences=references.slice(),ids=new Set(posts.map(p=>String(p.id)));
+  posts=posts.slice();
+  for(const p of arr){
+   if(ids.has(String(p.id)))continue;
+   const id=p.id||Date.now()+"-"+Math.random();
+   posts.push({...p,id});ids.add(String(id));
+  }
+  addHistory(extra);
+  references=stagedRefs;
+  const addedPosts=posts.length-oldPosts.length,addedHistory=history.length-oldHistory.length;
+  const addedRefs=references.length-oldReferences.length;
+  if(!persist()){
+   posts=oldPosts;history=oldHistory;references=oldReferences;
+   status.textContent="復元できませんでした。データの保存に失敗しました。";
+   refreshBackupStatus();return;
+  }
+  render();
+  renderReferenceLibrary37();
+  refreshBackupStatus();
+  status.textContent="復元完了：投稿予定 "+addedPosts+"件、過去投稿履歴 "+addedHistory+"件、参考投稿 "+addedRefs+"件を追加しました。";
+ }catch(err){status.textContent="復元できません："+err.message;uiInfo35(status.textContent)}
+ finally{e.target.value=""}
+}
+function v33LocalToday(){
+ const d=new Date();
+ return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");
+}
+function changeListFilters(){
+ selected.clear();
+ render();
+}
+function resetListFilters(){
+ document.getElementById("listAccount").value="all";
+ document.getElementById("listPlatform").value="all";
+ document.getElementById("listPeriod").value="all";
+ document.getElementById("listSearch").value="";
+ currentFilter="all";selected.clear();render();
+}
+async function pasteGeneratedJson(){
+ const input=document.getElementById("jsonImport");
+ try{
+  if(!navigator.clipboard||typeof navigator.clipboard.readText!=="function")throw Error("not-supported");
+  const value=await navigator.clipboard.readText();
+  if(!value.trim()){uiInfo35("コピーした文章が見つかりません。ChatGPTの生成結果をコピーしてください。");input.focus();return}
+  input.value=value;input.focus();
+  document.getElementById("importStatus").textContent="生成結果を貼り付けました。「③ 内容を確認して一括登録」に進んでください。";
+ }catch(e){
+  input.focus();
+  uiInfo35("このブラウザでは自動貼り付けが利用できない場合があります。入力欄を長押しして「ペースト」を選んでください。");
+ }
+}
+function visiblePosts(){
+ const account=document.getElementById("listAccount").value;
+ const platform=document.getElementById("listPlatform").value;
+ const period=document.getElementById("listPeriod").value;
+ const search=document.getElementById("listSearch").value.trim().toLocaleLowerCase();
+ const today=v33LocalToday();
+ return posts.filter(p=>
+   (currentFilter==="all"||(currentFilter==="done"?p.done:!p.done))&&
+   (account==="all"||p.account===account)&&
+   (platform==="all"||p.platform===platform)&&
+   (period!=="today"||(typeof p.date==="string"&&p.date.slice(0,10)===today))&&
+   (!search||String(p.content||"").toLocaleLowerCase().includes(search))
+ );
+}
+function renderToday(){
+ const today=v33LocalToday(),d=new Date();
+ document.getElementById("todayDate").textContent=(d.getMonth()+1)+"月"+d.getDate()+"日";
+ const root=document.getElementById("todayPosts");root.replaceChildren();
+ const todays=posts.filter(p=>typeof p.date==="string"&&p.date.slice(0,10)===today)
+  .sort((a,b)=>Number(a.done)-Number(b.done)||String(a.date).localeCompare(String(b.date))||String(a.account).localeCompare(String(b.account)));
+ const pending=todays.filter(p=>!p.done).length;
+ const completed=todays.length-pending;
+ document.getElementById("todaySummary").textContent="未投稿："+pending+"件　／　投稿済み："+completed+"件";
+ if(!todays.length){
+  const empty=document.createElement("p");empty.className="today-blank";
+  empty.textContent="今日の投稿予定はありません。登録済みの別の日付の投稿は下の一覧で確認できます。";
+  root.appendChild(empty);return;
+ }
+ for(const p of todays){
+  const block=document.createElement("div");block.className="today-post"+(p.done?" is-done":"");
+  const meta=document.createElement("div");meta.className="today-meta";
+  const time=document.createElement("span");time.className="today-time";time.textContent=p.date.slice(11,16)||"時刻未設定";
+  const account=document.createElement("span");account.textContent=p.account+" ／ "+p.platform+" ／ "+(p.done?"投稿済み":"未投稿");
+  meta.append(time,account);
+  const body=document.createElement("div");body.className="today-body";body.textContent=p.content;
+  const actions=document.createElement("div");actions.className="today-actions";
+  const copy=document.createElement("button");copy.className="primary";copy.textContent="① 本文コピー";copy.onclick=()=>copyPost(p.id);
+  const open=document.createElement("button");open.className="go";open.textContent="② "+p.platform+"を開く";open.onclick=()=>openPlatform(p.id);
+  const mark=document.createElement("button");mark.className=p.done?"revert":"mark";
+  mark.textContent=p.done?"③ 未投稿に戻す":"③ 投稿済みにする";
+  mark.onclick=()=>toggleDone(p.id);
+  actions.append(copy,open,mark);block.append(meta,body,actions);root.appendChild(block);
+ }
+}
+
+function updateSelected(){document.getElementById("selectedCount").textContent="選択中："+selected.size+"件"}
+function selectVisible(on){for(const p of visiblePosts()){if(on)selected.add(String(p.id));else selected.delete(String(p.id))}render()}
+async function bulkDone(done){const targets=posts.filter(p=>selected.has(String(p.id)));if(!targets.length){uiInfo35("投稿を選択してください");return}if(!await uiConfirm35(targets.length+"件を変更しますか？"))return;const old=targets.map(p=>p.done);targets.forEach(p=>p.done=done);if(!persist())targets.forEach((p,i)=>p.done=old[i]);selected.clear();render()}
+async function bulkDelete(){const n=posts.filter(p=>selected.has(String(p.id))).length;if(!n){uiInfo35("投稿を選択してください");return}if(!await uiConfirm35(n+"件を削除しますか？元に戻せません。"))return;const old=posts;posts=posts.filter(p=>!selected.has(String(p.id)));if(!persist())posts=old;else selected.clear();render()}
+async function clearAll(){if(!posts.length){uiInfo35("削除する投稿がありません");return}if(!await uiConfirm35("全"+posts.length+"件を投稿一覧から消去します。重複防止履歴は残ります。バックアップを保存しましたか？\n実行するには「全削除」と入力してください。","全削除"))return;const old=posts;posts=[];if(!persist())posts=old;else selected.clear();render()}
+function render(){
+renderToday();
+if(typeof refreshStorageUsage342==="function")refreshStorageUsage342();
+const root=document.getElementById("posts");
+root.replaceChildren();updateSelected();
+const matches=visiblePosts();
+document.getElementById("listCount").textContent="表示中："+matches.length+"件 ／ 登録済み："+posts.length+"件";
+if(!posts.length){
+const empty=document.createElement("p");
+empty.className="empty";
+empty.textContent="まだ投稿がありません";
+root.appendChild(empty);
+return;
+}
+const sorted=matches.sort((a,b)=>
+Number(a.done)-Number(b.done)||
+(a.date||"9999").localeCompare(b.date||"9999"));
+if(!sorted.length){
+ const empty=document.createElement("p");empty.className="empty";
+ empty.textContent="条件に一致する投稿はありません。絞り込みを解除すると全投稿を確認できます。";
+ root.appendChild(empty);return;
+}
+sorted.forEach(p=>{
+const div=document.createElement("div");
+div.className="post"+(p.done?" done":"");
+const checkLabel=document.createElement("label");checkLabel.className="selectpost";const check=document.createElement("input");check.type="checkbox";check.checked=selected.has(String(p.id));check.onchange=()=>{if(check.checked)selected.add(String(p.id));else selected.delete(String(p.id));updateSelected()};const checkText=document.createElement("span");checkText.textContent="この投稿を選択";checkLabel.append(check,checkText);div.appendChild(checkLabel);
+const meta=document.createElement("div");
+meta.className="meta";
+meta.textContent=p.account+" ／ "+p.platform+" ／ "+(p.date?p.date.replace("T"," "):"日時未設定")+(p.done?" ／ 投稿済み":" ／ 未投稿");
+const body=document.createElement("div");
+body.className="body";
+body.textContent=p.content;
+const actions=document.createElement("div");
+actions.className="actions";
+[
+["コピー",()=>copyPost(p.id)],
+["編集",()=>editPost(p.id)],
+["投稿先を開く",()=>openPlatform(p.id)],
+[p.done?"未投稿に戻す":"投稿済みにする",()=>toggleDone(p.id)],
+["削除",()=>deletePost(p.id)]
+].forEach(([label,fn])=>{
+const b=document.createElement("button");
+b.textContent=label;
+b.onclick=fn;
+actions.appendChild(b);
+});
+div.append(meta,body,actions);
+root.appendChild(div);
+});
+}
+document.getElementById("weekstart").value=localDay(v33LocalToday(),1);
+render();
+refreshBackupStatus();
+
+const notified = new Set();
+
+function checkNotifications() {
+  const now = Date.now();
+
+  posts.forEach(p => {
+    if (p.done || !p.date) return;
+
+    const scheduled = new Date(p.date).getTime();
+    if (!Number.isFinite(scheduled)) return;
+
+    [
+      { minutes: 5, label: "5分前" },
+      { minutes: 0, label: "予定時刻" }
+    ].forEach(n => {
+      const target = scheduled - n.minutes * 60000;
+      const id = p.id + "-" + n.minutes;
+
+      if (
+        now >= target &&
+        now < target + 60000 &&
+        !notified.has(id)
+      ) {
+        notified.add(id);
+        uiInfo35(
+          "SNS投稿のお知らせ\n" +
+          p.account + " / " + p.platform +
+          "\n" + n.label + "です"
+        );
+      }
+    });
+  });
+}
+
+setInterval(checkNotifications, 15000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkNotifications()});
+checkNotifications();
+</script>
+<script src="import34.js?v=36"></script>
+<script src="history342-qa-v37.js?v=37"></script>
+<script src="references37-qa.js?v=37"></script>
+</body>
+</html>
