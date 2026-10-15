@@ -1,0 +1,23 @@
+name: iPhone UIとSNS履歴の回帰テスト
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'qa-platform.html'
+      - 'history342-qa-platform.js'
+      - 'import34-qa-platform.js'
+      - 'scripts/tests/iphone-ui-v355.test.mjs'
+      - '.github/workflows/iphone-ui-qa.yml'
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Test markup, native-free dialogs, multiline editing, and duplicate history
+        run: node --test scripts/tests/iphone-ui-v355.test.mjs

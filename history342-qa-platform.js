@@ -43,14 +43,14 @@ function parsePastedHistory342(raw, selectedAccount){
 function computeHistoryPreview342(raw,account){
  const parsed=parsePastedHistory342(raw,account);
  const exists=new Set(history.filter(h=>h&&typeof h.account==="string"&&typeof h.content==="string").map(historyIdentity));
- const seen=new Set(),fresh=[];
+ const seen=new Set(),fresh=[],states=[];
  let duplicateCount=0;
  for(const p of parsed){
    const normalized=norm(p.content),id=historyIdentity(p);
-   if(!normalized || seen.has(id) || exists.has(id)){duplicateCount++;continue}
-   seen.add(id);fresh.push(p);
+   if(!normalized || seen.has(id) || exists.has(id)){duplicateCount++;states.push({post:p,kind:"登録済み／重複"});continue}
+   seen.add(id);fresh.push(p);states.push({post:p,kind:"新規"});
  }
- return {raw,account,total:parsed.length,duplicates:duplicateCount,fresh};
+ return {raw,account,total:parsed.length,duplicates:duplicateCount,fresh,states};
 }
 function previewPastedHistory342(){
  const raw=document.getElementById("pasteHistory342").value;
@@ -64,6 +64,9 @@ function previewPastedHistory342(){
   p.className="help";
   p.textContent="読み取り："+preview.total+"件　／　新規："+preview.fresh.length+"件　／　重複："+preview.duplicates+"件";
   panel.appendChild(p);
+  const detail=document.createElement("p");detail.className="help";
+  detail.textContent=preview.states.slice(0,30).map((x,i)=>(i+1)+". "+x.post.platform+"："+x.kind).join(" ／ ");
+  panel.appendChild(detail);
   const names=["カイ","後輩くん","漫画・恋愛"];
   const summary=document.createElement("p");
   summary.className="help";
@@ -91,7 +94,7 @@ function previewPastedHistory342(){
   status.className="status paste-error342";
  }
 }
-function savePastedHistory342(){
+async function savePastedHistory342(){
  const status=document.getElementById("pasteStatus342"),panel=document.getElementById("pastePreview342");
  if(!pastePreview342)return;
  const raw=document.getElementById("pasteHistory342").value;
@@ -103,7 +106,7 @@ function savePastedHistory342(){
  let updated;
  try{updated=computeHistoryPreview342(raw,account)}catch(e){status.textContent=e.message;return}
  if(!updated.fresh.length){status.textContent="追加対象がありません。";panel.hidden=true;return}
- if(!confirm("過去投稿 "+updated.fresh.length+"件を重複防止履歴だけに追加しますか？ 投稿予定には追加しません。"))return;
+ if(!await uiConfirm35("過去投稿 "+updated.fresh.length+"件を重複防止履歴だけに追加しますか？ 投稿予定には追加しません。"))return;
  // Calculate the complete next archive and store before changing in-memory history.
  const newHistory=history.concat(updated.fresh);
  try{

@@ -154,7 +154,7 @@ function renderHistoryImport(){
  const cancel=document.createElement("button");cancel.className="secondary";cancel.textContent="キャンセル";cancel.onclick=()=>{import34Rows=[];import34Snapshot=null;panel.hidden=true;import34Status("取り込みをキャンセルしました")};
  buttons.append(save,cancel);panel.append(header,sub,sample,buttons);
 }
-function commitHistoryImport(){
+async function commitHistoryImport(){
  if(!import34Snapshot||!import34Rows.length)return;
  const {account,source}=import34Snapshot;
  if(account!==document.getElementById("importAccount").value||source!==document.getElementById("importSource").value){
@@ -163,7 +163,7 @@ function commitHistoryImport(){
  const existing=new Set(history.filter(p=>p?.account===account&&p?.platform===source).map(p=>norm(p.content)));
  const candidates=import34Rows.filter(p=>!existing.has(norm(p.content)));
  if(!candidates.length){import34Status("新規の投稿はありません");return}
- if(!confirm(account+"の過去投稿 "+candidates.length+"件を、重複防止用の履歴だけに保存しますか？"))return;
+ if(!await uiConfirm35(account+"の過去投稿 "+candidates.length+"件を、重複防止用の履歴だけに保存しますか？"))return;
  /* Atomic localStorage update. Never modify scheduled posts. */
  const old=history;
  const incoming=candidates.map(p=>({account,platform:source,content:p.content,date:p.date}));
