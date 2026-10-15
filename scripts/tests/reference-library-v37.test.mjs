@@ -249,3 +249,19 @@ test('restore cancel, corrupt references and storage quota error do not lose old
  assert.deepEqual(['sns-post-manager-v1','sns-post-manager-history-v1','sns-post-manager-references-v1'].map(k=>a.storage.get(k)),original);
  assert.equal(a.refs().length,1);
 });
+
+test('the iPhone QA page has three isolated storage keys and fictional sample controls',()=>{
+ const qa=fs.readFileSync('qa-references-v37.html','utf8');
+ assert.match(qa,/sns-post-manager-test-reference-v37/);
+ assert.match(qa,/sns-post-manager-history-test-reference-v37/);
+ assert.match(qa,/sns-post-manager-references-test-v37/);
+ assert.doesNotMatch(qa,/const key="sns-post-manager-v1"/);
+ assert.doesNotMatch(qa,/const referenceKey="sns-post-manager-references-v1"/);
+ assert.match(qa,/fillReferenceSample37\('kai'\)/);
+ assert.match(qa,/src="references37-qa.js\?v=37"/);
+ assert.match(qa,/src="history342-qa-v37.js\?v=37"/);
+});
+test('the isolated QA scripts match the validated production candidate scripts',()=>{
+ assert.equal(fs.readFileSync('references37-qa.js','utf8'),library);
+ assert.equal(fs.readFileSync('history342-qa-v37.js','utf8'),historyJs);
+});
