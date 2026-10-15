@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SNS投稿管理 Ver.3.7.1</title>
+<title>SNS投稿管理 Ver.3.8</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f4f6fa;color:#222;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
@@ -125,11 +125,29 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 #refBackupPanel371{background:#f1f8f4;border:1px solid #91c4a6;padding:12px;border-radius:12px;margin-top:17px}
 #refBackupPanel371 input[type=file]{min-height:52px;background:#fff}
 #refBackupPanel371 .primary,#refBackupPanel371 .secondary{min-height:48px}
+
+/* Ver.3.8: compact format chooser BELOW the first-card daily posting workflow */
+.x-format38{margin:12px 0;background:#f5f9ff;border:1px solid #a9c7e8;border-radius:12px;padding:12px}
+.x-format38[hidden],#threadCountGroup38[hidden],#xTargetGroup38[hidden],#premiumTargetGroup38[hidden],#manualThread38[hidden],#manualContentLabel38[hidden],#content[hidden]{display:none!important}
+.x-format38 h3{font-size:15px;margin:4px 0 8px;color:#184477}
+.x-format38 .help{margin:8px 0}
+.x-format38 label{margin-top:10px}
+.format-status38{font-size:13px;color:#155d3c;font-weight:700;margin-top:8px}
+.format-help38{font-size:12px;line-height:1.7;color:#465b72}
+.thread-parts38{display:grid;gap:9px;margin:10px 0}
+.thread-part38{background:#f7faff;border:1px solid #cad8e8;border-radius:11px;padding:10px}
+.thread-part-top38{display:flex;justify-content:space-between;gap:8px;align-items:center;color:#243f63}
+.thread-body38{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.65;margin:8px 0}
+.thread-copied38{font-size:12px;font-weight:700;color:#137048}
+.thread-copy38{min-height:44px;width:100%;background:#2458a7;color:#fff}
+.format-meter38{font-size:12px;line-height:1.6;color:#52677d;margin:5px 0 10px}
+.format-over38{color:#ad2525;font-weight:800}
+#manualThreadParts38 textarea{min-height:82px}
 </style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.7.1</h1>
+<h1>SNS投稿管理 Ver.3.8</h1>
 <p>X・Threadsの投稿管理、履歴の重複防止、バックアップ。データはこの端末のブラウザ内に保存されます。</p>
 </header>
 <section id="copyPanel356" class="card" hidden aria-label="コピー用の文章" style="border:2px solid #3575aa;margin:12px auto;max-width:650px"><h2 id="copyTitle356">コピー用文章</h2><p id="copyStatus356" class="help" role="status"></p><textarea id="copyField356" rows="8" readonly aria-label="コピー用テキスト" style="min-height:190px;user-select:text;-webkit-user-select:text"></textarea><div class="row"><button type="button" class="primary" onclick="retryCopy356()">コピーする</button><a id="chatLink356" href="https://chatgpt.com/" target="_blank" rel="noopener" style="display:none;padding:14px;font-weight:bold">ChatGPTを開く ↗</a></div></section><div id="notice35" class="qa-notice35" role="status" hidden><button type="button" onclick="document.getElementById('notice35').hidden=true" aria-label="お知らせを閉じる">×</button><span id="noticeMessage35"></span></div>
@@ -144,15 +162,48 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 
 <div id="todaySummary" class="today-summary" role="status"></div>
 <div id="todayPosts"></div>
-<p class="help">①本文コピー → ②投稿先を開く → 投稿後に③投稿済み。送信は自分で確認して行います。</p>
+<p class="help">①本文コピー → ②投稿先を開く → 投稿後に③投稿済み。スレッドは1/3・2/3…を別々にコピーしてXの「＋」でつなげます。送信は自分で確認して行います。</p>
 </section>
 <section class="card">
 <h2>✨ AIで1週間分の投稿を作る</h2>
 <div class="pill">カイ・後輩くん・漫画恋愛 各14本 ／ 合計42本<br>毎日12:00・20:00 ／ API追加料金0円</div>
 <label for="weekstart">投稿を始める日</label><input type="date" id="weekstart">
-<label for="destination">投稿先</label><select id="destination"><option>X</option><option>Threads</option></select>
+<label for="destination">投稿先</label><select id="destination" onchange="refreshFormatUi38()"><option>X</option><option>Threads</option></select>
 <label for="generationBatch">生成する本数</label><select id="generationBatch" onchange="refreshReferencePreview371()"><option value="all">全42本まとめて（従来どおり）</option><option value="kai">カイ14本</option><option value="kouhai">後輩くん14本</option><option value="manga">漫画・恋愛14本</option></select>
 <p class="help">42本で文章が途切れる場合は、各アカウント14本ずつ生成・登録できます。途中まで登録しても既存の投稿は消えません。</p>
+<div id="xFormatPanel38" class="x-format38">
+<h3>✍️ Xの投稿形式（変更するまで保存）</h3>
+<p id="formatSummary38" class="help" role="status"></p>
+<label for="xFormat38">投稿タイプ</label>
+<select id="xFormat38" onchange="formatSelectionChanged38()">
+<option value="single">無料X：通常投稿（1本）</option>
+<option value="thread">無料X：スレッド（2〜5本）</option>
+<option value="premium">X Premium：長文投稿（1本）</option>
+</select>
+<div id="xTargetGroup38">
+<label for="xTarget38">日本語の目標文字数（各投稿）</label>
+<select id="xTarget38" onchange="formatSelectionChanged38()">
+<option value="100">約100文字</option>
+<option value="120">約120文字（おすすめ）</option>
+<option value="140">約140文字</option>
+<option value="auto">上限内で自動調整</option>
+</select>
+</div>
+<div id="threadCountGroup38" hidden>
+<label for="threadCount38">スレッドの投稿数</label>
+<select id="threadCount38" onchange="formatSelectionChanged38()">
+<option value="2">2投稿</option><option value="3">3投稿</option><option value="4">4投稿</option><option value="5">5投稿</option>
+</select>
+</div>
+<div id="premiumTargetGroup38" hidden>
+<label for="premiumTarget38">長文の目標文字数</label>
+<select id="premiumTarget38" onchange="formatSelectionChanged38()">
+<option value="300">約300文字</option><option value="800">約800文字</option><option value="1500">約1,500文字</option><option value="3000">約3,000文字</option>
+</select>
+</div>
+<p id="formatStatus38" class="format-status38" aria-live="polite">前回の選択を読み込みます。</p>
+<p class="format-help38">X通常投稿は加重カウント280以内（日本語はおおむね140文字）。リンクや絵文字を含む場合の数え方は概算です。必ず最後にXの投稿画面でも文字数を確認してください。スレッドは各パート別に制限します。</p>
+</div>
 <p id="referenceUsageSummary37" role="status">参考投稿ライブラリを読み込み中...</p>
 <div id="refAppliedPreview371" class="ref-preview-box371" aria-live="polite"></div>
 <button class="primary" onclick="generatePrompt()">① 生成指示をコピー</button>
@@ -217,14 +268,15 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <option>漫画・恋愛</option>
 </select>
 <label>投稿先</label>
-<select id="platform">
+<select id="platform" onchange="refreshManualThread38()">
 <option>X</option>
 <option>Threads</option>
 </select>
 <label>投稿予定日時</label>
 <input type="datetime-local" id="date">
-<label>投稿本文</label>
+<label id="manualContentLabel38" for="content">投稿本文</label>
 <textarea id="content" placeholder="投稿文を入力してください"></textarea>
+<div id="manualThread38" hidden><p class="format-help38">Xスレッド形式で作成します。各パートを別々に入力して保存できます（予定枠は1件のまま）。</p><div id="manualThreadParts38"></div></div>
 <button class="primary" onclick="savePost()">投稿を保存</button>
 </section>
 <section class="card" id="historyImporter">
@@ -864,6 +916,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkNotif
 checkNotifications();
 </script>
 <script src="import34.js?v=36"></script>
+<script src="postformat38.js?v=38"></script>
 <script src="history342.js?v=37"></script>
 <script src="references37.js?v=371"></script>
 </body>
