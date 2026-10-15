@@ -7,6 +7,7 @@ on:
       - 'history342.js'
       - 'scripts/tests/release-v36-integration.test.mjs'
       - '.github/workflows/release-v36.yml'
+      - 'docs/release-v36-rollout.md'
   workflow_dispatch:
 permissions:
   contents: read
