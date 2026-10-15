@@ -178,7 +178,6 @@ function refreshManualThread38(){
    label.append(input,meter);wrap.appendChild(label);
   }
  }
- }
 }
 function collectManualFormat38(platform,content){
  const base={content:String(content||"").trim()};
