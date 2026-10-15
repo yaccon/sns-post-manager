@@ -140,10 +140,13 @@ function xSampleJson38(){
   for(let day=0;day<7;day++)for(const time of ["12:00","20:00"]){
    n++;
    const id="試験投稿"+stamp+"-"+n;
-   const lead=id+"："+account+"の発信について、読者が今日から試せる小さな工夫を紹介します。";
+   let seed=n*7919+17,random="";
+   const kana="あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん";
+   for(let z=0;z<46;z++){seed=(seed*16807)%2147483647;random+=kana[seed%kana.length]}
+   const lead="試験"+n+"："+random;
    const item={account,platform:s.platform,date:localDay(start,day)+"T"+time,content:lead};
    if(s.platform==="X"&&s.mode==="thread"){
-    item.threadParts=Array.from({length:s.parts},(_,j)=>j===0?lead:("続き"+(j+1)+"："+id+"。"+(j+1)+"つ目の視点から新しい気づきを説明します。"));
+    item.threadParts=Array.from({length:s.parts},(_,j)=>j===0?lead:("続き"+(j+1)+"："+id+"。"+random.slice(j*6,j*6+22)+"。"));
    }
    list.push(item);
   }
