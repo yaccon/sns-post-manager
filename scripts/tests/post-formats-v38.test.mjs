@@ -304,7 +304,7 @@ test("isolated iPhone QA page has its own four storage keys, samples, and Today 
  assert.ok(qa.indexOf('id="todaySection"')<qa.indexOf('id="xFormatPanel38"'));
  assert.match(qa,/const key="sns-post-manager-qa-v38"/);
  assert.match(qa,/const historyKey="sns-post-manager-history-qa-v38"/);
- assert.match(qa,/const referenceKey="sns-post-manager-references-qa-v38"/);
+ assert.match(qa,/const referenceKey="sns-post-manager-references-test-qa-v38"/);
  assert.match(helper,/const formatSettingsKey38="sns-post-manager-format-settings-qa-v38"/);
  assert.match(qa,/qaSeedToday38/);
  assert.match(qa,/postformat38-qa\.js\?v=38/);
