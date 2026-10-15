@@ -34,6 +34,7 @@ function app(initialPosts=[],initialHistory=[]){
  get('generationBatch').value='kai';get('xFormat38').value='single';get('xBudget38').value='240';get('xParts38').value='3';
  get('refFilter37').value='すべて';
  for(const [content,filename] of [[inline,'index.html'],[history,'history342.js'],[imported,'import34.js'],[refs,'references37.js'],[xformat,'xformat38.js']])vm.runInContext(content,c,{filename});
+ get('weekstart').value='2026-10-26'; // App initialization sets next day; override after initialization for stable fixture dates.
  return {c,get,data,downloads,run:s=>vm.runInContext(s,c,{timeout:5000}),posts:()=>JSON.parse(data.get('sns-post-manager-v1')||'[]'),confirm:async(yes=true)=>{for(let i=0;i<7&&!get('actionDialog35').open;i++)await Promise.resolve();assert.equal(get('actionDialog35').open,true);get(yes?'actionOk35':'actionCancel35').onclick()}};
 }
 function batch(account='カイ',mode='single',count=14,platform='X',parts=3){
@@ -42,10 +43,13 @@ function batch(account='カイ',mode='single',count=14,platform='X',parts=3){
  let index=0;
  for(const ac of accounts)for(let day=0;day<7;day++)for(const hhmm of ['12:00','20:00']){
   index++;
-  const body='テストの文章'+index+'：この投稿では新しい視点から読者の悩みを考えます。';
+  let seed=index*19173+17;let random='';
+  const abc='あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん';
+  for(let k=0;k<45;k++){seed=(seed*16807)%2147483647;random+=abc[seed%abc.length]}
+  const body='テストの文章'+index+'：'+random;
   const date=new Date('2026-10-26T12:00:00Z');date.setUTCDate(date.getUTCDate()+day);
   const row={account:ac,platform,date:date.toISOString().slice(0,10)+'T'+hhmm,content:body};
-  if(mode==='thread')row.threadParts=Array.from({length:parts},(_,j)=>j===0?body:'続き'+(j+1)+'：読者が新しい気づきを得られる説明をします。投稿'+index+'番です。');
+  if(mode==='thread')row.threadParts=Array.from({length:parts},(_,j)=>j===0?body:'続き'+(j+1)+'：'+random.slice(j*9,j*9+18)+'。番号'+index+'です。');
   out.push(row);
  }
  return out;
