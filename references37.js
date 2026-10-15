@@ -5,6 +5,8 @@
 const refAccounts37=["共通","カイ","後輩くん","漫画・恋愛"];
 const refSources37=["X","Threads","その他"];
 let editingReferenceId37=null;
+const referenceCards371=new Map();
+let referenceNoticeTimer371=null;
 
 function referenceUrl37(value){
  const input=String(value||"").trim();
@@ -127,14 +129,55 @@ function editReference37(id){
  document.getElementById("refContent37").focus();
  document.getElementById("refContent37").scrollIntoView({behavior:"smooth",block:"center"});
 }
+function referenceStateLabels371(r){
+ return {
+  meta:(r.favorite?"★ ":"")+r.account+" ／ "+r.source+(r.useForGeneration?" ／ 生成に反映中":" ／ 生成には未反映"),
+  state:"生成への反映："+(r.useForGeneration?"ON（反映中）":"OFF（未反映）")+"　／　優先設定："+(r.favorite?"★ 優先":"通常"),
+  use:"生成に反映："+(r.useForGeneration?"ON ✓":"OFF"),
+  favorite:"お気に入り："+(r.favorite?"★ 優先":"☆ 通常")
+ };
+}
+function showReferenceNotice371(message){
+ const el=document.getElementById("refToast371");
+ if(!el)return;
+ el.textContent=message;
+ el.hidden=false;
+ if(referenceNoticeTimer371!==null)clearTimeout(referenceNoticeTimer371);
+ referenceNoticeTimer371=setTimeout(()=>{el.hidden=true;referenceNoticeTimer371=null},4000);
+}
+function updateReferenceCard371(id){
+ const ref=references.find(x=>x.id===id);
+ const ui=referenceCards371.get(String(id));
+ if(!ref||!ui)return;
+ const x=referenceStateLabels371(ref);
+ ui.meta.textContent=x.meta;ui.state.textContent=x.state;
+ ui.use.textContent=x.use;ui.favorite.textContent=x.favorite;
+ ui.use.setAttribute("aria-pressed",String(!!ref.useForGeneration));
+ ui.favorite.setAttribute("aria-pressed",String(!!ref.favorite));
+ ui.use.className=ref.useForGeneration?"ref-active371":"secondary";
+ ui.favorite.className=ref.favorite?"ref-favorite371":"secondary";
+ ui.card.className="ref-item37"+(ref.useForGeneration?" ref-chosen371":"");
+}
 function toggleReference37(id,field){
  if(field!=="favorite"&&field!=="useForGeneration")return;
  const ref=references.find(x=>x.id===id);if(!ref)return;
  const old=references.slice();
  references=references.map(x=>x.id===id?{...x,[field]:!x[field]}:x);
- if(!persist()){references=old;document.getElementById("refStatus37").textContent="変更を保存できませんでした。";return}
- renderReferenceLibrary37();refreshBackupStatus();
- document.getElementById("refStatus37").textContent=field==="favorite"?"優先度を変更しました。":"生成時の参考設定を変更しました。";
+ if(!persist()){
+  references=old;
+  document.getElementById("refStatus37").textContent="変更を保存できませんでした。設定は変わっていません。";
+  showReferenceNotice371("保存失敗：設定は変更されていません");
+  return;
+ }
+ const current=references.find(x=>x.id===id);
+ updateReferenceCard371(id);
+ referenceSummaryStatus37();refreshBackupStatus();
+ if(typeof refreshStorageUsage342==="function")refreshStorageUsage342();
+ const message=field==="favorite"
+  ?(current.favorite?"★ 優先に設定しました":"お気に入りを通常に戻しました")
+  :(current.useForGeneration?"✓ 生成への反映をONにしました":"生成への反映をOFFにしました");
+ document.getElementById("refStatus37").textContent=message;
+ showReferenceNotice371(message);
 }
 async function deleteReference37(id){
  const ref=references.find(x=>x.id===id);if(!ref)return;
@@ -156,14 +199,44 @@ function referenceAnalysis37(id){
 }
 function referenceSummaryStatus37(){
  const status=document.getElementById("referenceUsageSummary37");
- if(status)status.textContent="生成指示に使う参考投稿（各企画最大5件・★優先）："+referenceUsedSummary37();
+ if(status)status.textContent="現在の生成設定（各企画最大5件・★優先）："+referenceUsedSummary37();
  const count=document.getElementById("refCount37");
- if(count)count.textContent="保存中 "+references.length+"件 ／ 生成に使用 "+references.filter(x=>x&&x.useForGeneration).length+"件";
+ if(count)count.textContent="保存中 "+references.length+"件 ／ 生成に反映 ON "+references.filter(x=>x&&x.useForGeneration).length+"件";
+ refreshReferencePreview371();
+}
+function refreshReferencePreview371(){
+ const root=document.getElementById("refAppliedPreview371");
+ if(!root)return;
+ root.replaceChildren();
+ const control=document.getElementById("generationBatch");
+ const batch=control?control.value:"kai";
+ const name={kai:"カイ",kouhai:"後輩くん",manga:"漫画・恋愛"}[batch]||null;
+ const accounts=name?[name]:["カイ","後輩くん","漫画・恋愛"];
+ const title=document.createElement("strong");
+ title.textContent=(name?name+" 14本":"全42本")+"の生成指示に実際に反映する参考投稿";
+ root.appendChild(title);
+ let total=0;
+ for(const account of accounts){
+  const matches=referenceMatch37(account).slice(0,5);
+  total+=matches.length;
+  const row=document.createElement("p");
+  row.className="ref-preview-line371";
+  row.textContent=account+"："+matches.length+"件"+
+    (matches.length?" → "+matches.map(r=>(r.favorite?"★ ":"")+r.content.slice(0,65)+(r.content.length>65?"…":"")).join(" ／ "):"（未選択：参考投稿なしで生成）");
+  root.appendChild(row);
+ }
+ const bottom=document.createElement("p");
+ bottom.className="ref-preview-note371";
+ bottom.textContent=total
+  ?"上記の参考資料が生成指示に含まれます。コピーした指示文にも「【参考投稿の活用】」が入ります。"
+  :"現在は参考投稿を反映しません。保存済みの参考投稿で「生成に反映：OFF」を押してONにしてください。";
+ root.appendChild(bottom);
 }
 function renderReferenceLibrary37(){
  const list=document.getElementById("referenceList37");
  if(!list)return;
  list.replaceChildren();
+ referenceCards371.clear();
  referenceSummaryStatus37();
  if(typeof refreshStorageUsage342==="function")refreshStorageUsage342();
  const filter=document.getElementById("refFilter37").value;
@@ -180,11 +253,11 @@ function renderReferenceLibrary37(){
  for(const r of matches){
   const card=document.createElement("div");card.className="ref-item37";
   const meta=document.createElement("div");meta.className="meta";
-  meta.textContent=(r.favorite?"★ ":"")+r.account+" ／ "+r.source+(r.useForGeneration?" ／ 生成に使用":"");
+  const state=document.createElement("div");state.className="ref-state371";state.setAttribute("role","status");
   const body=document.createElement("p");body.className="ref-body37";body.textContent=r.content;
   const note=document.createElement("p");note.className="ref-note37";
   note.textContent=r.note?"気に入った理由："+r.note:"気に入った理由：未入力";
-  card.append(meta,body,note);
+  card.append(meta,state,body,note);
   if(r.url){
    const link=document.createElement("a");
    link.href=r.url;link.target="_blank";link.rel="noopener noreferrer";
@@ -192,9 +265,10 @@ function renderReferenceLibrary37(){
    card.appendChild(link);
   }
   const row=document.createElement("div");row.className="ref-actions37";
+  const use=document.createElement("button");use.type="button";use.onclick=()=>toggleReference37(r.id,"useForGeneration");
+  const favorite=document.createElement("button");favorite.type="button";favorite.onclick=()=>toggleReference37(r.id,"favorite");
+  row.append(use,favorite);
   for(const [label,handler] of [
-   [r.useForGeneration?"✓ 生成に使う":"＋ 生成に使う",()=>toggleReference37(r.id,"useForGeneration")],
-   [r.favorite?"★ 優先":"☆ 優先にする",()=>toggleReference37(r.id,"favorite")],
    ["AI分析指示をコピー",()=>referenceAnalysis37(r.id)],
    ["編集",()=>editReference37(r.id)],
    ["削除",()=>deleteReference37(r.id)]
@@ -204,6 +278,103 @@ function renderReferenceLibrary37(){
    b.textContent=label;b.onclick=handler;row.appendChild(b);
   }
   card.appendChild(row);list.appendChild(card);
+  referenceCards371.set(String(r.id),{card,meta,state,use,favorite});
+  updateReferenceCard371(r.id);
  }
 }
+
+/* Guided, reference-only backup/restore: does not touch scheduled posts or history. */
+let pendingReferenceImport371=null;
+function referenceExport371(){
+ const status=document.getElementById("refBackupStatus371");
+ if(!references.length){status.textContent="参考投稿がまだ0件です。保存してからバックアップしてください。";return}
+ let url=null;
+ try{
+  const json={kind:"sns-reference-library",version:1,exportedAt:new Date().toISOString(),references:references.map(r=>normalizeReference37(r,true))};
+  const blob=new Blob([JSON.stringify(json,null,2)],{type:"application/json"});
+  url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download=(referenceKey.includes("-test-")?"sns-TEST-v371-references-":"sns-reference-library-")+new Date().toISOString().slice(0,10)+".json";
+  a.style.display="none";
+  document.body.appendChild(a);
+  try{a.click()}finally{a.remove()}
+  status.textContent="参考投稿"+references.length+"件のバックアップ保存を開始しました。必ずiPhoneの「ファイル」でJSONファイルを確認してください。";
+ }catch(e){
+  status.textContent="バックアップを開始できませんでした："+String(e?.message||e);
+ }finally{
+  if(url)setTimeout(()=>URL.revokeObjectURL(url),60000);
+ }
+}
+async function prepareReferenceRestore371(e){
+ const input=e.target;
+ const file=input?.files?.[0];
+ if(!file)return;
+ const status=document.getElementById("refBackupStatus371");
+ const btn=document.getElementById("refCommitRestore371");
+ pendingReferenceImport371=null;btn.hidden=true;
+ status.textContent="選んだファイルを読み込み中："+file.name;
+ try{
+  if(file.size>5*1024*1024)throw Error("5MBを超える参考投稿JSONは読み込めません。");
+  let data;
+  try{data=JSON.parse(await file.text())}
+  catch(e){throw Error("JSON形式のファイルではありません。正しいバックアップを選んでください。")}
+  if(!data||!Array.isArray(data.references)){
+   throw Error("このファイルには参考投稿が含まれていません。通常版Ver.3.6以前のバックアップには参考投稿がありません。Ver.3.7以降のバックアップを選んでください。");
+  }
+  if(data.references.length>500)throw Error("参考投稿の登録上限500件を超えています。");
+  const clean=data.references.map(r=>normalizeReference37(r,true));
+  const staged=references.slice();
+  const incoming=[];
+  const ids=new Set(references.map(r=>String(r.id)));
+  for(const ref of clean){
+   if(ids.has(String(ref.id))||referenceDuplicate37(ref,null,staged))continue;
+   if(staged.length>=500)throw Error("登録上限500件を超えるため復元できません。");
+   staged.push(ref);incoming.push(ref);ids.add(String(ref.id));
+  }
+  pendingReferenceImport371={items:incoming,name:file.name,originalCount:clean.length};
+  status.textContent="確認：ファイル「"+file.name+"」には参考投稿"+clean.length+"件。"+
+   "\n新しく追加できる参考投稿："+incoming.length+"件 ／ 既に保存済み・重複："+(clean.length-incoming.length)+"件。"+
+   (incoming.length?"\n内容を確認して「② 参考投稿を復元」を押してください。":
+    "\n追加0件：全件登録済みか、ファイル内に新しい参考投稿がありません。これはエラーではありません。");
+  btn.hidden=incoming.length===0;
+ }catch(err){
+  status.textContent="復元ファイルを確認できません："+String(err?.message||err);
+  showReferenceNotice371("参考投稿の復元に失敗しました。画面の理由を確認してください");
+ }finally{input.value=""}
+}
+function commitReferenceRestore371(){
+ const status=document.getElementById("refBackupStatus371");
+ const btn=document.getElementById("refCommitRestore371");
+ const pending=pendingReferenceImport371;
+ if(!pending||!pending.items.length){
+  status.textContent="追加する参考投稿がありません。先にJSONファイルを選択してください。";return
+ }
+ const old=references.slice(),ids=new Set(references.map(r=>String(r.id)));
+ const merged=references.slice();
+ for(const r of pending.items){
+  if(ids.has(String(r.id))||referenceDuplicate37(r,null,merged))continue;
+  if(merged.length>=500){
+   status.textContent="復元を中止しました。参考投稿500件の上限に達しています。";return;
+  }
+  merged.push(r);ids.add(String(r.id));
+ }
+ const added=merged.length-old.length;
+ if(!added){
+  status.textContent="復元対象は既に登録されています。追加0件（正常）。";
+  pendingReferenceImport371=null;btn.hidden=true;return;
+ }
+ references=merged;
+ if(!persist()){
+  references=old;
+  status.textContent="復元できませんでした。データの保存容量とブラウザ設定を確認してください。元の参考投稿は維持しています。";
+  showReferenceNotice371("復元の保存に失敗しました");
+  return;
+ }
+ pendingReferenceImport371=null;btn.hidden=true;
+ renderReferenceLibrary37();refreshBackupStatus();
+ status.textContent="✓ 参考投稿を"+added+"件復元しました。現在の参考投稿は"+references.length+"件です。投稿予定・過去履歴は変更していません。";
+ showReferenceNotice371("✓ 参考投稿"+added+"件の復元に成功しました");
+}
+
 renderReferenceLibrary37();
