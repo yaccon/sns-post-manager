@@ -307,7 +307,7 @@ test("isolated iPhone QA page has its own four storage keys, samples, and Today 
  assert.match(qa,/const referenceKey="sns-post-manager-references-test-qa-v38"/);
  assert.match(helper,/const formatSettingsKey38="sns-post-manager-format-settings-qa-v38"/);
  assert.match(qa,/qaSeedToday38/);
- assert.match(qa,/postformat38-qa\.js\?v=38/);
+ assert.match(qa,/postformat38-qa\.js\?v=381/);
  assert.doesNotMatch(qa,/const key="sns-post-manager-v1"/);
  assert.match(qa,/id="threadsTargetPanel38"/);
  assert.match(qa,/id="threadsTarget38"/);
