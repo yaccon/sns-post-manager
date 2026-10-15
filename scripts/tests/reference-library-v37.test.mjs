@@ -8,6 +8,7 @@ const inline=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 const library=fs.readFileSync('references37.js','utf8');
 const historyJs=fs.readFileSync('history342.js','utf8');
 const importerJs=fs.readFileSync('import34.js','utf8');
+const xScript=fs.readFileSync('xformat38.js','utf8');
 assert.ok(inline);
 
 class El {
@@ -48,6 +49,8 @@ function setup(initialPosts=[],initialHistory=[],initialRefs=[]){
   navigator:{clipboard:{writeText:async()=>{}}},
   Date,Intl,URL:MockURL,Blob,console,setInterval(){},setTimeout:()=>42,clearTimeout(){}
  });
+ get('destination').value='X';get('xFormat38').value='single';get('xBudget38').value='240';get('xParts38').value='3';
+ vm.runInContext(xScript,c,{filename:'xformat38.js'});
  vm.runInContext(inline,c,{filename:'index.inline.js'});
  vm.runInContext(historyJs,c,{filename:'history342.js'});
  vm.runInContext(importerJs,c,{filename:'import34.js'});
@@ -76,7 +79,7 @@ async function restore(a,obj,yes=true){
 }
 test('v3.7 markup and scripts parse; existing post/history key names do not change',()=>{
  for(const code of [inline,library,historyJs,importerJs])assert.doesNotThrow(()=>new vm.Script(code));
- assert.match(html,/Ver\.3\.7/);
+ assert.match(html,/Ver\.3\.(?:7|8)/);
  assert.match(html,/const key="sns-post-manager-v1"/);
  assert.match(html,/const historyKey="sns-post-manager-history-v1"/);
  assert.match(html,/const referenceKey="sns-post-manager-references-v1"/);

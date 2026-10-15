@@ -1,0 +1,25 @@
+name: Ver3.8 X文字数・ツリーモードの回帰検証
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'qa-x-format-v38.html'
+      - 'xformat38.js'
+      - 'scripts/tests/x-format-v38.test.mjs'
+      - 'scripts/tests/release-v36-integration.test.mjs'
+      - 'scripts/tests/reference-library-v37.test.mjs'
+      - '.github/workflows/x-format-v38.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  x-format-regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: X Free/Premium-independent length and thread regressions
+        run: node --test scripts/tests/x-format-v38.test.mjs scripts/tests/reference-library-v37.test.mjs scripts/tests/release-v36-integration.test.mjs

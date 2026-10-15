@@ -8,6 +8,7 @@ const js=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 const hist=fs.readFileSync('history342.js','utf8');
 const files=fs.readFileSync('import34.js','utf8');
 const refScript=fs.readFileSync('references37.js','utf8');
+const xScript=fs.readFileSync('xformat38.js','utf8');
 assert.ok(js,'production HTML must contain app JS');
 class Element {
  constructor(){this.value='';this.textContent='';this.style={};this.hidden=false;this.open=false;this.children=[];this.dataset={};this.files=[];this.disabled=false;this.onclick=null;this.listeners={};this.href='';this.download='';this.className='';this.parent=null;}
@@ -52,6 +53,8 @@ function app(seedPosts=[],seedHistory=[]){
   URL:{createObjectURL:blob=>{const id='blob:'+urls.size;urls.set(id,blob);return id},revokeObjectURL(){}},
   Blob,Date,Intl,console,setInterval:()=>0,setTimeout:()=>123,clearTimeout:()=>{}
  });
+ get('destination').value='X';get('xFormat38').value='single';get('xBudget38').value='240';get('xParts38').value='3';
+ vm.runInContext(xScript,ctx,{filename:'xformat38.js'});
  vm.runInContext(js,ctx,{filename:'index.html'});
  vm.runInContext(hist,ctx,{filename:'history342.js'});
  vm.runInContext(files,ctx,{filename:'import34.js'});
@@ -99,7 +102,7 @@ async function loadBackup(a,content,accept=true){
 
 test('production candidate parses, retains original storage keys, and has no QA-only features',()=>{
  for(const chunk of [js,hist,files])assert.doesNotThrow(()=>new vm.Script(chunk));
- assert.match(html,/<title>SNS投稿管理 Ver\.3\.(?:6|7)(?:\.1)?<\/title>/);
+ assert.match(html,/<title>SNS投稿管理 Ver\.3\.(?:6|7|8)(?:\.1)?(?: テスト候補)?<\/title>/);
  assert.match(html,/const key="sns-post-manager-v1"/);
  assert.match(html,/const historyKey="sns-post-manager-history-v1"/);
  assert.match(html,/id="generationBatch"/);
