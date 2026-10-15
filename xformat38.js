@@ -94,10 +94,11 @@ function xRenderExtraParts38(p,container){
  const wrap=document.createElement("div");
  wrap.className="x-thread-list38";
  const note=document.createElement("p");
- note.textContent="Xのツリー "+parts.length+"投稿。上から順番にコピー → Xで「＋」から投稿を追加し、全部投稿したら「投稿済み」にしてください。";
+ note.textContent="Xのツリー "+parts.length+"投稿（1投目のX換算：約"+xWeightedLength38(parts[0])+"ウェイト）。上の「1投目コピー」から順番にコピーし、Xの「＋」で続きの投稿を追加してください。全部公開してから「投稿済み」にします。";
  note.className="x-thread-note38";
  wrap.appendChild(note);
  parts.forEach((piece,index)=>{
+  if(index===0)return; // first post has its own large copy control above
   const row=document.createElement("div");row.className="x-thread-segment38";
   const heading=document.createElement("span");
   heading.textContent=(index+1)+"/"+parts.length+"　X換算 約"+xWeightedLength38(piece)+" / "+(p.budget38||280);
