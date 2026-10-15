@@ -5,6 +5,8 @@
 const refAccounts37=["共通","カイ","後輩くん","漫画・恋愛"];
 const refSources37=["X","Threads","その他"];
 let editingReferenceId37=null;
+const referenceCards371=new Map();
+let referenceNoticeTimer371=null;
 
 function referenceUrl37(value){
  const input=String(value||"").trim();
@@ -127,14 +129,55 @@ function editReference37(id){
  document.getElementById("refContent37").focus();
  document.getElementById("refContent37").scrollIntoView({behavior:"smooth",block:"center"});
 }
+function referenceStateLabels371(r){
+ return {
+  meta:(r.favorite?"★ ":"")+r.account+" ／ "+r.source+(r.useForGeneration?" ／ 生成に反映中":" ／ 生成には未反映"),
+  state:"生成への反映："+(r.useForGeneration?"ON（反映中）":"OFF（未反映）")+"　／　優先設定："+(r.favorite?"★ 優先":"通常"),
+  use:"生成に反映："+(r.useForGeneration?"ON ✓":"OFF"),
+  favorite:"お気に入り："+(r.favorite?"★ 優先":"☆ 通常")
+ };
+}
+function showReferenceNotice371(message){
+ const el=document.getElementById("refToast371");
+ if(!el)return;
+ el.textContent=message;
+ el.hidden=false;
+ if(referenceNoticeTimer371!==null)clearTimeout(referenceNoticeTimer371);
+ referenceNoticeTimer371=setTimeout(()=>{el.hidden=true;referenceNoticeTimer371=null},4000);
+}
+function updateReferenceCard371(id){
+ const ref=references.find(x=>x.id===id);
+ const ui=referenceCards371.get(String(id));
+ if(!ref||!ui)return;
+ const x=referenceStateLabels371(ref);
+ ui.meta.textContent=x.meta;ui.state.textContent=x.state;
+ ui.use.textContent=x.use;ui.favorite.textContent=x.favorite;
+ ui.use.setAttribute("aria-pressed",String(!!ref.useForGeneration));
+ ui.favorite.setAttribute("aria-pressed",String(!!ref.favorite));
+ ui.use.className=ref.useForGeneration?"ref-active371":"secondary";
+ ui.favorite.className=ref.favorite?"ref-favorite371":"secondary";
+ ui.card.className="ref-item37"+(ref.useForGeneration?" ref-chosen371":"");
+}
 function toggleReference37(id,field){
  if(field!=="favorite"&&field!=="useForGeneration")return;
  const ref=references.find(x=>x.id===id);if(!ref)return;
  const old=references.slice();
  references=references.map(x=>x.id===id?{...x,[field]:!x[field]}:x);
- if(!persist()){references=old;document.getElementById("refStatus37").textContent="変更を保存できませんでした。";return}
- renderReferenceLibrary37();refreshBackupStatus();
- document.getElementById("refStatus37").textContent=field==="favorite"?"優先度を変更しました。":"生成時の参考設定を変更しました。";
+ if(!persist()){
+  references=old;
+  document.getElementById("refStatus37").textContent="変更を保存できませんでした。設定は変わっていません。";
+  showReferenceNotice371("保存失敗：設定は変更されていません");
+  return;
+ }
+ const current=references.find(x=>x.id===id);
+ updateReferenceCard371(id);
+ referenceSummaryStatus37();refreshBackupStatus();
+ if(typeof refreshStorageUsage342==="function")refreshStorageUsage342();
+ const message=field==="favorite"
+  ?(current.favorite?"★ 優先に設定しました":"お気に入りを通常に戻しました")
+  :(current.useForGeneration?"✓ 生成への反映をONにしました":"生成への反映をOFFにしました");
+ document.getElementById("refStatus37").textContent=message;
+ showReferenceNotice371(message);
 }
 async function deleteReference37(id){
  const ref=references.find(x=>x.id===id);if(!ref)return;
@@ -156,14 +199,44 @@ function referenceAnalysis37(id){
 }
 function referenceSummaryStatus37(){
  const status=document.getElementById("referenceUsageSummary37");
- if(status)status.textContent="生成指示に使う参考投稿（各企画最大5件・★優先）："+referenceUsedSummary37();
+ if(status)status.textContent="現在の生成設定（各企画最大5件・★優先）："+referenceUsedSummary37();
  const count=document.getElementById("refCount37");
- if(count)count.textContent="保存中 "+references.length+"件 ／ 生成に使用 "+references.filter(x=>x&&x.useForGeneration).length+"件";
+ if(count)count.textContent="保存中 "+references.length+"件 ／ 生成に反映 ON "+references.filter(x=>x&&x.useForGeneration).length+"件";
+ refreshReferencePreview371();
+}
+function refreshReferencePreview371(){
+ const root=document.getElementById("refAppliedPreview371");
+ if(!root)return;
+ root.replaceChildren();
+ const control=document.getElementById("generationBatch");
+ const batch=control?control.value:"kai";
+ const name={kai:"カイ",kouhai:"後輩くん",manga:"漫画・恋愛"}[batch]||null;
+ const accounts=name?[name]:["カイ","後輩くん","漫画・恋愛"];
+ const title=document.createElement("strong");
+ title.textContent=(name?name+" 14本":"全42本")+"の生成指示に実際に反映する参考投稿";
+ root.appendChild(title);
+ let total=0;
+ for(const account of accounts){
+  const matches=referenceMatch37(account).slice(0,5);
+  total+=matches.length;
+  const row=document.createElement("p");
+  row.className="ref-preview-line371";
+  row.textContent=account+"："+matches.length+"件"+
+    (matches.length?" → "+matches.map(r=>(r.favorite?"★ ":"")+r.content.slice(0,65)+(r.content.length>65?"…":"")).join(" ／ "):"（未選択：参考投稿なしで生成）");
+  root.appendChild(row);
+ }
+ const bottom=document.createElement("p");
+ bottom.className="ref-preview-note371";
+ bottom.textContent=total
+  ?"上記の参考資料が生成指示に含まれます。コピーした指示文にも「【参考投稿の活用】」が入ります。"
+  :"現在は参考投稿を反映しません。保存済みの参考投稿で「生成に反映：OFF」を押してONにしてください。";
+ root.appendChild(bottom);
 }
 function renderReferenceLibrary37(){
  const list=document.getElementById("referenceList37");
  if(!list)return;
  list.replaceChildren();
+ referenceCards371.clear();
  referenceSummaryStatus37();
  if(typeof refreshStorageUsage342==="function")refreshStorageUsage342();
  const filter=document.getElementById("refFilter37").value;
@@ -180,11 +253,11 @@ function renderReferenceLibrary37(){
  for(const r of matches){
   const card=document.createElement("div");card.className="ref-item37";
   const meta=document.createElement("div");meta.className="meta";
-  meta.textContent=(r.favorite?"★ ":"")+r.account+" ／ "+r.source+(r.useForGeneration?" ／ 生成に使用":"");
+  const state=document.createElement("div");state.className="ref-state371";state.setAttribute("role","status");
   const body=document.createElement("p");body.className="ref-body37";body.textContent=r.content;
   const note=document.createElement("p");note.className="ref-note37";
   note.textContent=r.note?"気に入った理由："+r.note:"気に入った理由：未入力";
-  card.append(meta,body,note);
+  card.append(meta,state,body,note);
   if(r.url){
    const link=document.createElement("a");
    link.href=r.url;link.target="_blank";link.rel="noopener noreferrer";
@@ -192,9 +265,10 @@ function renderReferenceLibrary37(){
    card.appendChild(link);
   }
   const row=document.createElement("div");row.className="ref-actions37";
+  const use=document.createElement("button");use.type="button";use.onclick=()=>toggleReference37(r.id,"useForGeneration");
+  const favorite=document.createElement("button");favorite.type="button";favorite.onclick=()=>toggleReference37(r.id,"favorite");
+  row.append(use,favorite);
   for(const [label,handler] of [
-   [r.useForGeneration?"✓ 生成に使う":"＋ 生成に使う",()=>toggleReference37(r.id,"useForGeneration")],
-   [r.favorite?"★ 優先":"☆ 優先にする",()=>toggleReference37(r.id,"favorite")],
    ["AI分析指示をコピー",()=>referenceAnalysis37(r.id)],
    ["編集",()=>editReference37(r.id)],
    ["削除",()=>deleteReference37(r.id)]
@@ -204,6 +278,9 @@ function renderReferenceLibrary37(){
    b.textContent=label;b.onclick=handler;row.appendChild(b);
   }
   card.appendChild(row);list.appendChild(card);
+  referenceCards371.set(String(r.id),{card,meta,state,use,favorite});
+  updateReferenceCard371(r.id);
  }
 }
+
 renderReferenceLibrary37();
