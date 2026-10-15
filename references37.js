@@ -158,16 +158,17 @@ function referenceSummaryStatus37(){
  const status=document.getElementById("referenceUsageSummary37");
  if(status)status.textContent="生成指示に使う参考投稿（各企画最大5件・★優先）："+referenceUsedSummary37();
  const count=document.getElementById("refCount37");
- if(count)count.textContent="保存中 "+references.length+"件 ／ 生成に使用 "+references.filter(x=>x.useForGeneration).length+"件";
+ if(count)count.textContent="保存中 "+references.length+"件 ／ 生成に使用 "+references.filter(x=>x&&x.useForGeneration).length+"件";
 }
 function renderReferenceLibrary37(){
  const list=document.getElementById("referenceList37");
  if(!list)return;
  list.replaceChildren();
  referenceSummaryStatus37();
+ if(typeof refreshStorageUsage342==="function")refreshStorageUsage342();
  const filter=document.getElementById("refFilter37").value;
  const word=document.getElementById("refSearch37").value.trim().toLowerCase();
- const matches=references.filter(r=>
+ const matches=references.filter(r=>r&&typeof r.content==="string"&&
   (filter==="すべて"||r.account===filter)&&
   (!word||[r.content,r.note,r.url,r.source].some(t=>String(t||"").toLowerCase().includes(word)))
  ).sort((a,b)=>Number(!!b.favorite)-Number(!!a.favorite)||String(b.createdAt||"").localeCompare(String(a.createdAt||"")));
