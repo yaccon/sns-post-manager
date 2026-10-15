@@ -317,7 +317,7 @@ test("isolated iPhone QA page has its own four storage keys, samples, and Today 
 
 test("Threads target defaults to 200 and persists independently from X across page reload",()=>{
  const store=new Map(),a=boot(store);
- assert.equal(a.prefs().threadsTarget,"200");
+ assert.equal(a.run("formatSettings38.threadsTarget"),"200");
  apply(a,{xFormat38:"thread",xTarget38:"100",threadCount38:4});
  a.get("destination").value="Threads";
  a.run("refreshFormatUi38()");
