@@ -606,7 +606,7 @@ function exportBackup(){
   url=URL.createObjectURL(blob);
   const a=document.createElement("a");
   a.href=url;
-  a.download="sns-post-manager-backup-"+new Date().toISOString().slice(0,10)+".json";
+  a.download="sns-TEST-v37-references-backup-"+new Date().toISOString().slice(0,10)+".json";
   a.style.display="none";
   document.body.appendChild(a);
   try{a.click()}finally{a.remove()}
