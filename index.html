@@ -326,6 +326,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <div class="bulkbar"><div class="row"><button class="secondary" onclick="selectVisible(true)">表示中を全選択</button><button class="secondary" onclick="selectVisible(false)">選択解除</button></div><p id="selectedCount">選択中：0件</p><div class="row"><button class="secondary" onclick="bulkDone(true)">選択を投稿済みに</button><button class="secondary" onclick="bulkDone(false)">選択を未投稿に</button></div><div class="row"><button class="danger" onclick="bulkDelete()">選択を削除</button><button class="danger" onclick="clearAll()">全部消去</button></div><p class="help warn">削除前にバックアップを保存してください。削除しても重複防止用の投稿履歴は残ります。</p></div><div id="posts"></div>
 </section>
 </main>
+<script src="xformat38.js?v=38"></script>
 <script>
 const key="sns-post-manager-v1";
 const historyKey="sns-post-manager-history-v1";
@@ -916,6 +917,5 @@ checkNotifications();
 <script src="import34.js?v=36"></script>
 <script src="history342.js?v=37"></script>
 <script src="references37.js?v=371"></script>
-<script src="xformat38.js?v=38"></script>
 </body>
 </html>
