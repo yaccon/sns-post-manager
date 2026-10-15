@@ -914,7 +914,7 @@ root.appendChild(div);
 });
 }
 document.getElementById("weekstart").value=localDay(v33LocalToday(),1);
-render();
+// Initial render waits until postformat38.js loads; legacy stored posts are never erased.
 refreshBackupStatus();
 
 const notified = new Set();
