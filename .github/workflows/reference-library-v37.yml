@@ -1,0 +1,25 @@
+name: Ver3.7 参考投稿ライブラリ回帰テスト
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'qa-references-v37.html'
+      - 'references37.js'
+      - 'history342.js'
+      - 'scripts/tests/reference-library-v37.test.mjs'
+      - 'scripts/tests/release-v36-integration.test.mjs'
+      - '.github/workflows/reference-library-v37.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  reference-library:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Ver3.7 reference library and old-data safety
+        run: node --test scripts/tests/reference-library-v37.test.mjs scripts/tests/release-v36-integration.test.mjs
