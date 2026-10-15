@@ -81,7 +81,7 @@ test('v3.7 markup and scripts parse; existing post/history key names do not chan
  assert.match(html,/const historyKey="sns-post-manager-history-v1"/);
  assert.match(html,/const referenceKey="sns-post-manager-references-v1"/);
  assert.match(html,/id="referenceLibrary37"/);
- assert.match(html,/src="references37\.js\?v=37"/);
+ assert.match(html,/src="references37\.js\?v=371"/);
  assert.doesNotMatch(html,/\b(?:alert|confirm|prompt)\s*\(/);
 });
 test('opening v3.7 with existing v3.6 data does not modify any saved bytes',()=>{
