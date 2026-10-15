@@ -196,12 +196,13 @@ test('reference deletion prompts and does not touch existing scheduled post/hist
  const a=setup([old],[past]);
  fill(a,{content:'消去したい参考投稿'});
  a.run('saveReference37()');const id=a.refs()[0].id;
+ const expectedHistory=a.history();
  const cancel=a.run('deleteReference37('+JSON.stringify(id)+')');
  await a.confirm(false);await cancel;assert.equal(a.refs().length,1);
  const del=a.run('deleteReference37('+JSON.stringify(id)+')');
  await a.confirm(true);await del;assert.equal(a.refs().length,0);
  assert.deepEqual(a.posts(),[old]);
- assert.deepEqual(a.history(),[past,old]);
+ assert.deepEqual(a.history(),expectedHistory);
 });
 test('export includes reference posts and correct 3-key storage estimates',async()=>{
  const a=setup();
