@@ -166,6 +166,17 @@ function formatOutput38(item){
  if(prepared.error)throw Error(prepared.error);
  return {account:item.account,platform:item.platform,date:item.date,...prepared};
 }
+function refreshManualTextCount38(){
+ const meter=document.getElementById("manualThreadsCount38");
+ if(!meter)return;
+ const isThreads=document.getElementById("platform")?.value==="Threads";
+ meter.hidden=!isThreads;
+ if(!isThreads)return;
+ const content=document.getElementById("content")?.value||"";
+ const count=threadsTextLength38(content);
+ meter.textContent="Threads文字数（概算）："+count+"/500";
+ meter.className="format-meter38"+(count>500?" format-over38":"");
+}
 function refreshManualThread38(){
  const manual=document.getElementById("manualThread38");
  if(!manual)return;
@@ -175,6 +186,7 @@ function refreshManualThread38(){
  if(area)area.hidden=show;
  const manualLabel=document.getElementById("manualContentLabel38");
  if(manualLabel)manualLabel.hidden=show;
+ refreshManualTextCount38();
  const wrap=document.getElementById("manualThreadParts38");
  if(!wrap)return;
  if(show){
