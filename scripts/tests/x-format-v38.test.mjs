@@ -205,3 +205,26 @@ test('Threads input ignores X free-plan budget and continues ordinary 14 posts',
  assert.equal(a.posts().length,14);
  assert.equal(a.posts()[0].format38,undefined);
 });
+
+test('sample 14 X thread JSON uses selected settings and imports as 14 scheduled stories',async()=>{
+ const a=app();
+ a.get('xFormat38').value='thread';a.get('xParts38').value='4';a.get('xBudget38').value='200';
+ a.run('xSampleJson38()');
+ const generated=JSON.parse(a.get('jsonImport').value);
+ assert.equal(generated.length,14);
+ assert.ok(generated.every(p=>p.threadParts.length===4&&p.platform==='X'));
+ assert.equal(new Set(generated.map(p=>p.content)).size,14);
+ await register(a,generated);
+ assert.equal(a.posts().length,14);
+ assert.ok(a.posts().every(p=>p.threadParts.length===4&&p.budget38===200));
+});
+test('sample 42 X single JSON imports as 42 existing slots with no duplicate overwrite',async()=>{
+ const a=app();a.get('generationBatch').value='all';
+ a.run('xSampleJson38()');
+ const generated=JSON.parse(a.get('jsonImport').value);
+ assert.equal(generated.length,42);
+ assert.ok(generated.every(p=>!p.threadParts));
+ await register(a,generated);
+ assert.equal(a.posts().length,42);
+ assert.equal(new Set(a.posts().map(p=>p.account+'|'+p.date)).size,42);
+});
