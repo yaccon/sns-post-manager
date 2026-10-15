@@ -177,9 +177,26 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <label for="destination">投稿先</label><select id="destination" onchange="refreshFormatUi38()"><option>X</option><option>Threads</option></select>
 <label for="generationBatch">生成する本数</label><select id="generationBatch" onchange="refreshReferencePreview371()"><option value="all">全42本まとめて（従来どおり）</option><option value="kai">カイ14本</option><option value="kouhai">後輩くん14本</option><option value="manga">漫画・恋愛14本</option></select>
 <p class="help">42本で文章が途切れる場合は、各アカウント14本ずつ生成・登録できます。途中まで登録しても既存の投稿は消えません。</p>
+<div class="x-format38">
+<p id="formatSummary38" class="help" role="status"></p>
+<div id="threadsTargetPanel38" hidden>
+<h3>📝 Threadsの通常投稿（最大500文字）</h3>
+<label for="threadsTarget38">Threadsで作る文章の目標文字数</label>
+<select id="threadsTarget38" onchange="formatSelectionChanged38()">
+<option value="100">約100文字</option>
+<option value="150">約150文字</option>
+<option value="200">約200文字（おすすめ）</option>
+<option value="300">約300文字</option>
+<option value="400">約400文字</option>
+<option value="450">約450文字</option>
+<option value="500">500文字以内</option>
+<option value="auto">500文字以内で自動調整</option>
+</select>
+<p class="format-help38">日本語も通常の文字数で数え、1投稿500文字まで。長文添付（最大10,000文字）は別機能のため、このアプリでは通常投稿に含めません。絵文字などの文字数は概算なので投稿前にThreadsでも確認してください。選んだ文字数はXとは別に記憶されます。</p>
+</div>
+</div>
 <div id="xFormatPanel38" class="x-format38">
 <h3>✍️ Xの投稿形式（変更するまで保存）</h3>
-<p id="formatSummary38" class="help" role="status"></p>
 <label for="xFormat38">投稿タイプ</label>
 <select id="xFormat38" onchange="formatSelectionChanged38()">
 <option value="single">無料X：通常投稿（1本）</option>
@@ -208,7 +225,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </select>
 </div>
 <p id="formatStatus38" class="format-status38" aria-live="polite">前回の選択を読み込みます。</p>
-<p class="format-help38">X通常投稿は加重カウント280以内（日本語はおおむね140文字）。リンクや絵文字を含む場合の数え方は概算です。必ず最後にXの投稿画面でも文字数を確認してください。スレッドは各パート別に制限します。</p>
+<p class="format-help38">X通常投稿は加重カウント280以内（日本語はおおむね140文字）。Threads通常投稿は500文字以内です。両SNSともリンクや絵文字の数え方は概算なので、投稿直前に各SNSで確認してください。スレッドは各パート別に制限します。</p>
 </div>
 <p id="referenceUsageSummary37" role="status">参考投稿ライブラリを読み込み中...</p>
 <div id="refAppliedPreview371" class="ref-preview-box371" aria-live="polite"></div>
@@ -274,14 +291,14 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <option>漫画・恋愛</option>
 </select>
 <label>投稿先</label>
-<select id="platform" onchange="refreshManualThread38()">
+<select id="platform" onchange="refreshManualThread38();if(typeof refreshManualTextCount38==='function')refreshManualTextCount38()">
 <option>X</option>
 <option>Threads</option>
 </select>
 <label>投稿予定日時</label>
 <input type="datetime-local" id="date">
 <label id="manualContentLabel38" for="content">投稿本文</label>
-<textarea id="content" placeholder="投稿文を入力してください"></textarea>
+<textarea id="content" placeholder="投稿文を入力してください" oninput="if(typeof refreshManualTextCount38==='function')refreshManualTextCount38()"></textarea><p id="manualThreadsCount38" class="format-meter38" role="status"></p>
 <div id="manualThread38" hidden><p class="format-help38">Xスレッド形式で作成します。各パートを別々に入力して保存できます（予定枠は1件のまま）。</p><div id="manualThreadParts38"></div></div>
 <button class="primary" onclick="savePost()">投稿を保存</button>
 </section>
@@ -586,6 +603,9 @@ async function saveEdit35(){
   const over=parts.findIndex(part=>xWeightedLength38(part)>280);
   if(over>=0){uiInfo35("スレッド"+(over+1)+"本目がX上限280カウントを超えています。");return}
   change={content:parts.join("\n\n"),threadParts:parts,threadCopied:parts.map(()=>false)};
+ }else if(p.platform==="Threads"){
+  const count=threadsTextLength38(input);
+  if(count>500){uiInfo35("Threads通常投稿の500文字を超えています（概算"+count+"文字）。短くしてください。");return}
  }else if(p.platform==="X"){
   const limit=p.postFormat==="premium"?25000:280;
   if(xWeightedLength38(input)>limit){uiInfo35("X上限"+limit+"カウントを超えています。本文を短くしてください。");return}
