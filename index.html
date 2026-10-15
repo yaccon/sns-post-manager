@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SNS投稿管理 Ver.3.7.1</title>
+<title>SNS投稿管理 Ver.3.8 テスト候補</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f4f6fa;color:#222;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
@@ -125,11 +125,25 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 #refBackupPanel371{background:#f1f8f4;border:1px solid #91c4a6;padding:12px;border-radius:12px;margin-top:17px}
 #refBackupPanel371 input[type=file]{min-height:52px;background:#fff}
 #refBackupPanel371 .primary,#refBackupPanel371 .secondary{min-height:48px}
+
+/* Ver.3.8 X無料プラン・ツリー専用のiPhoneコントロール */
+.x-format38{margin:12px 0;padding:13px;background:#f3f8ff;border:1px solid #aec4e2;border-radius:12px}
+.x-format38[hidden],#xThreadRow38[hidden]{display:none!important}
+.x-format38 select{min-height:48px}
+.x-format38 strong{font-size:14px;color:#1c487b}
+#xFormatSummary38{font-size:13px;line-height:1.75;white-space:pre-wrap;color:#184774;background:#e6f0ff;padding:10px;border-radius:8px}
+.x-thread-list38{border-top:1px solid #d6dfeb;margin-top:10px;padding-top:12px}
+.x-thread-note38{font-size:13px;line-height:1.7;color:#294768;background:#f1f6ff;padding:10px;border-radius:8px}
+.x-thread-segment38{border:1px solid #d1dfed;border-radius:9px;margin:9px 0;padding:10px}
+.x-thread-segment38 span{display:block;font-weight:700;font-size:13px;color:#284a70}
+.x-thread-segment38 button{width:100%;margin-top:8px;min-height:45px}
+.x-thread-preview38{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px;line-height:1.7;margin:9px 0 0}
+.x-primary-segment38{background:#e1f0ff;color:#174c80}
 </style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.7.1</h1>
+<h1>SNS投稿管理 Ver.3.8</h1>
 <p>X・Threadsの投稿管理、履歴の重複防止、バックアップ。データはこの端末のブラウザ内に保存されます。</p>
 </header>
 <section id="copyPanel356" class="card" hidden aria-label="コピー用の文章" style="border:2px solid #3575aa;margin:12px auto;max-width:650px"><h2 id="copyTitle356">コピー用文章</h2><p id="copyStatus356" class="help" role="status"></p><textarea id="copyField356" rows="8" readonly aria-label="コピー用テキスト" style="min-height:190px;user-select:text;-webkit-user-select:text"></textarea><div class="row"><button type="button" class="primary" onclick="retryCopy356()">コピーする</button><a id="chatLink356" href="https://chatgpt.com/" target="_blank" rel="noopener" style="display:none;padding:14px;font-weight:bold">ChatGPTを開く ↗</a></div></section><div id="notice35" class="qa-notice35" role="status" hidden><button type="button" onclick="document.getElementById('notice35').hidden=true" aria-label="お知らせを閉じる">×</button><span id="noticeMessage35"></span></div>
@@ -150,7 +164,32 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <h2>✨ AIで1週間分の投稿を作る</h2>
 <div class="pill">カイ・後輩くん・漫画恋愛 各14本 ／ 合計42本<br>毎日12:00・20:00 ／ API追加料金0円</div>
 <label for="weekstart">投稿を始める日</label><input type="date" id="weekstart">
-<label for="destination">投稿先</label><select id="destination"><option>X</option><option>Threads</option></select>
+<label for="destination">投稿先</label><select id="destination" onchange="xUpdateFormat38()"><option>X</option><option>Threads</option></select>
+<div id="xFormatOptions38" class="x-format38">
+<strong>Xで投稿する文章の形式を選択（無料アカウント対応）</strong>
+<label for="xFormat38">投稿形式</label>
+<select id="xFormat38" onchange="xUpdateFormat38()">
+<option value="single">単発投稿（1回で完結）</option>
+<option value="thread">ツリー形式（複数投稿をつなぐ）</option>
+</select>
+<label for="xBudget38">1投稿あたりの文字数の目安</label>
+<select id="xBudget38" onchange="xUpdateFormat38()">
+<option value="200">短め：日本語約100文字／X換算200</option>
+<option value="240" selected>標準：日本語約120文字／X換算240</option>
+<option value="280">上限近く：日本語約140文字／X換算280</option>
+</select>
+<div id="xThreadRow38" hidden>
+<label for="xParts38">ツリーを何投稿にする？</label>
+<select id="xParts38" onchange="xUpdateFormat38()">
+<option value="2">2投稿</option>
+<option value="3" selected>3投稿</option>
+<option value="4">4投稿</option>
+<option value="5">5投稿</option>
+</select>
+</div>
+<p id="xFormatSummary38" role="status"></p>
+<p class="help">Xの文字数は日本語・英数字・絵文字・URLで計算方法が異なります。アプリ内のカウントは目安で、投稿前にはXの画面で最終確認してください。ツリーはSNSへ自動投稿されません。</p>
+</div>
 <label for="generationBatch">生成する本数</label><select id="generationBatch" onchange="refreshReferencePreview371()"><option value="all">全42本まとめて（従来どおり）</option><option value="kai">カイ14本</option><option value="kouhai">後輩くん14本</option><option value="manga">漫画・恋愛14本</option></select>
 <p class="help">42本で文章が途切れる場合は、各アカウント14本ずつ生成・登録できます。途中まで登録しても既存の投稿は消えません。</p>
 <p id="referenceUsageSummary37" role="status">参考投稿ライブラリを読み込み中...</p>
@@ -490,7 +529,8 @@ function editPost(id){
  const p=posts.find(x=>x.id===id);if(!p)return;
  editingId35=id;
  document.getElementById("editMeta35").textContent=p.account+" ／ "+p.platform+" ／ "+(p.date||"日時未設定");
- const field=document.getElementById("editField35");field.value=p.content;
+ const field=document.getElementById("editField35");field.value=xEditText38(p);
+ if(xPostParts38(p))document.getElementById("editMeta35").textContent+=" ／ ツリーは「---」の区切りを保って編集してください。";
  const dialog=document.getElementById("editDialog35");
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute("open","");
  field.focus();field.setSelectionRange(field.value.length,field.value.length);
@@ -503,15 +543,19 @@ function cancelEdit35(){
 async function saveEdit35(){
  const p=posts.find(x=>x.id===editingId35);
  if(!p){cancelEdit35();return}
- const content=document.getElementById("editField35").value.trim();
- if(!content){uiInfo35("本文は空にできません");return}
+ const entry=document.getElementById("editField35").value.trim();
+ if(!entry){uiInfo35("本文は空にできません");return}
+ let revised;try{revised=xEditValidate38(p,entry)}catch(e){uiInfo35(e.message);return}
+ const content=revised.content;
  if(norm(content)!==norm(p.content)){
   const match=findCollision({account:p.account,platform:p.platform,content},[],p.id);
   if(match?.kind==="exact"){uiInfo35("同じSNSの投稿履歴に同じ本文があります。編集しませんでした。");return}
   if(match?.kind==="similar"&&!await uiConfirm35("同じSNSの投稿履歴に似た文章があります。\n"+match.ref.content.slice(0,100)+"\n\n編集を続けますか？"))return;
  }
- const old=p.content;p.content=content;
- if(!persist()){p.content=old;return}
+ const old=p.content,oldParts=p.threadParts;
+ p.content=content;
+ if(revised.threadParts)p.threadParts=revised.threadParts;
+ if(!persist()){p.content=old;p.threadParts=oldParts;return}
  cancelEdit35();render();uiInfo35("投稿本文を保存しました。");
 }
 function localDay(date,offset){const d=new Date(date+"T12:00:00");d.setDate(d.getDate()+offset);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
@@ -523,7 +567,7 @@ const batch=document.getElementById("generationBatch").value;
 const batchAccount={kai:"カイ",kouhai:"後輩くん",manga:"漫画・恋愛"}[batch]||null;
 const slots=batchAccount?allSlots.filter(s=>s.account===batchAccount):allSlots;
 const recentHistory=history.filter(p=>!batchAccount||p.account===batchAccount).slice(-150).map(p=>({account:p.account,content:p.content}));
-const instruction="過去投稿との重複防止が最優先です。末尾の過去投稿履歴を確認し、文章の言い換えだけでなく、主張・題材・例・冒頭のフックが似ている投稿も避けてください。毎週、新しい問題提起・視点・具体例を選んでください。次の"+slots.length+"枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けに、14本あたり実用・共感8本、後輩くん制作物語の紹介4本、無料のSNS投稿管理アプリの開発状況と自然な案内2本を目安に構成する。実在する配布URLは入力されていないので架空のURLを絶対に作らず、未公開アプリを「配布中」と断定しない。後輩くんは初心者の成長を描くフィクション企画。2つ目の副業としてLINEスタンプを作る連載を進める。キャラクター統一、透過、切り抜き、連番保存、検品など実際に確認できた制作工程を物語に生かし、連載の時系列を守る。「カイが後輩くんのためにツールを作った」という設定を使う場合はフィクションと分かる表現にし、架空の売上や実績を現実の事実として断定しない。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。"+slots.length+"個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
+const instruction="過去投稿との重複防止が最優先です。末尾の過去投稿履歴を確認し、文章の言い換えだけでなく、主張・題材・例・冒頭のフックが似ている投稿も避けてください。毎週、新しい問題提起・視点・具体例を選んでください。次の"+slots.length+"枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けに、14本あたり実用・共感8本、後輩くん制作物語の紹介4本、無料のSNS投稿管理アプリの開発状況と自然な案内2本を目安に構成する。実在する配布URLは入力されていないので架空のURLを絶対に作らず、未公開アプリを「配布中」と断定しない。後輩くんは初心者の成長を描くフィクション企画。2つ目の副業としてLINEスタンプを作る連載を進める。キャラクター統一、透過、切り抜き、連番保存、検品など実際に確認できた制作工程を物語に生かし、連載の時系列を守る。「カイが後輩くんのためにツールを作った」という設定を使う場合はフィクションと分かる表現にし、架空の売上や実績を現実の事実として断定しない。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。"+xFormatInstruction38(platform)+"返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください."+slots.length+"個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
 const fullInstruction=instruction+referencePrompt37(batchAccount)+"\n過去の投稿履歴（直近最大150件。表現だけでなく題材の重複も避ける）:"+JSON.stringify(recentHistory);
 document.getElementById("chatLaunch357").style.display="none";
 doCopy356(fullInstruction,"生成指示をコピーしてChatGPTに貼る",true)
@@ -536,6 +580,7 @@ function importPosts(){
  let items;try{items=JSON.parse(raw)}catch(e){status.textContent="JSON形式を確認してください。途中で切れている場合はChatGPTに続きを依頼してください。";return}
  if(!Array.isArray(items)||![14,28,42].includes(items.length)){status.textContent="14本・28本・42本のJSON配列が必要です。現在："+(Array.isArray(items)?items.length:"配列ではありません")+"本";return}
  const allowed=["カイ","後輩くん","漫画・恋愛"];const start=document.getElementById("weekstart").value;const platform=document.getElementById("destination").value;
+ const formatSettings38=xGenerationSettings38();
  if(!start){status.textContent="開始日を選んでください";return}
  const expected=new Set();for(const a of allowed)for(let i=0;i<7;i++)for(const t of ["12:00","20:00"])expected.add(a+"|"+localDay(start,i)+"T"+t);
  const seen=new Set();const counts=new Map();
@@ -543,6 +588,7 @@ function importPosts(){
  if(!item||!allowed.includes(item.account)||item.platform!==platform||typeof item.date!=="string"||typeof item.content!=="string"||!item.content.trim()){status.textContent="アカウント・投稿先・日時・本文に不正な値があります。";return}
  const slot=item.account+"|"+item.date;
  if(!expected.has(slot)||seen.has(slot)){status.textContent="日時・アカウントに重複か指定外の値があります。";return}
+ try{xValidateImport38(item,formatSettings38)}catch(e){status.textContent="文字数・ツリーの形式を確認："+e.message;return}
  seen.add(slot);
  counts.set(item.account,(counts.get(item.account)||0)+1);
  }
@@ -555,11 +601,12 @@ function importPosts(){
  if(match?.kind==="exact"){exact++;continue}
  const near=match?.kind==="similar"?match:null;
  if(near)nearCount++;
- const copy={account:item.account,platform:item.platform,date:item.date,content:item.content.trim()};
+ const typed=xValidateImport38(item,formatSettings38);
+ const copy={account:item.account,platform:item.platform,date:item.date,...typed};
  candidates.push({item:copy,near});
  staged.push(copy);
  }
- pendingImport={original,start,platform,candidates,duplicateDates,exact,nearCount};
+ pendingImport={original,start,platform,formatSettings38,candidates,duplicateDates,exact,nearCount};
  const cleanCount=candidates.length-nearCount;
  status.textContent="確認結果：新規"+cleanCount+"本・類似"+nearCount+"本・完全一致"+exact+"本・日時重複"+duplicateDates+"本。\n類似投稿は初期状態で登録対象から外しています。";
  const box=document.createElement("div");box.className="reviewbox";
@@ -580,7 +627,7 @@ async function finishImport(){
  if(!pendingImport)return;
  const area=document.getElementById("importReview");const status=document.getElementById("importStatus");
  const preview=pendingImport;
- if(document.getElementById("jsonImport").value.trim()!==preview.original||document.getElementById("weekstart").value!==preview.start||document.getElementById("destination").value!==preview.platform){status.textContent="入力が変更されました。もう一度「③ 内容を確認して一括登録」を押してください。";area.replaceChildren();pendingImport=null;return}
+ if(document.getElementById("jsonImport").value.trim()!==preview.original||document.getElementById("weekstart").value!==preview.start||document.getElementById("destination").value!==preview.platform||JSON.stringify(xGenerationSettings38())!==JSON.stringify(preview.formatSettings38)){status.textContent="入力が変更されました.もう一度「③ 内容を確認して一括登録」を押してください。";area.replaceChildren();pendingImport=null;return}
  const selectedNear=new Set(Array.from(area.querySelectorAll("input[data-candidate-index]:checked"),el=>Number(el.dataset.candidateIndex)));
  const chosen=preview.candidates.filter((c,i)=>!c.near||selectedNear.has(i)).map(c=>c.item);
  const count=chosen.length;
@@ -755,14 +802,16 @@ function renderToday(){
   const time=document.createElement("span");time.className="today-time";time.textContent=p.date.slice(11,16)||"時刻未設定";
   const account=document.createElement("span");account.textContent=p.account+" ／ "+p.platform+" ／ "+(p.done?"投稿済み":"未投稿");
   meta.append(time,account);
-  const body=document.createElement("div");body.className="today-body";body.textContent=p.content;
+  const body=document.createElement("div");body.className="today-body";body.textContent=xPostParts38(p)?p.threadParts[0]:p.content;
   const actions=document.createElement("div");actions.className="today-actions";
-  const copy=document.createElement("button");copy.className="primary";copy.textContent="① 本文コピー";copy.onclick=()=>copyPost(p.id);
+  const copy=document.createElement("button");copy.className="primary";copy.textContent=xPostParts38(p)?"① 1投目コピー":"① 本文コピー";copy.onclick=()=>xPostParts38(p)?xCopyPart38(p.id,0):copyPost(p.id);
   const open=document.createElement("button");open.className="go";open.textContent="② "+p.platform+"を開く";open.onclick=()=>openPlatform(p.id);
   const mark=document.createElement("button");mark.className=p.done?"revert":"mark";
   mark.textContent=p.done?"③ 未投稿に戻す":"③ 投稿済みにする";
   mark.onclick=()=>toggleDone(p.id);
-  actions.append(copy,open,mark);block.append(meta,body,actions);root.appendChild(block);
+  actions.append(copy,open,mark);block.append(meta,body,actions);
+ xRenderExtraParts38(p,block);
+ root.appendChild(block);
  }
 }
 
@@ -802,11 +851,11 @@ meta.className="meta";
 meta.textContent=p.account+" ／ "+p.platform+" ／ "+(p.date?p.date.replace("T"," "):"日時未設定")+(p.done?" ／ 投稿済み":" ／ 未投稿");
 const body=document.createElement("div");
 body.className="body";
-body.textContent=p.content;
+body.textContent=xPostParts38(p)?p.threadParts[0]:p.content;
 const actions=document.createElement("div");
 actions.className="actions";
 [
-["コピー",()=>copyPost(p.id)],
+[xPostParts38(p)?"1投目コピー":"コピー",()=>xPostParts38(p)?xCopyPart38(p.id,0):copyPost(p.id)],
 ["編集",()=>editPost(p.id)],
 ["投稿先を開く",()=>openPlatform(p.id)],
 [p.done?"未投稿に戻す":"投稿済みにする",()=>toggleDone(p.id)],
@@ -818,6 +867,7 @@ b.onclick=fn;
 actions.appendChild(b);
 });
 div.append(meta,body,actions);
+xRenderExtraParts38(p,div);
 root.appendChild(div);
 });
 }
@@ -866,5 +916,6 @@ checkNotifications();
 <script src="import34.js?v=36"></script>
 <script src="history342.js?v=37"></script>
 <script src="references37.js?v=371"></script>
+<script src="xformat38.js?v=38"></script>
 </body>
 </html>
