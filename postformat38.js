@@ -159,7 +159,9 @@ function refreshManualThread38(){
  const show=document.getElementById("platform")?.value==="X"&&formatSettings38.xFormat==="thread";
  manual.hidden=!show;
  const area=document.getElementById("content");
- if(area)area.parentElement?.classList?.toggle?.("manual-single-hidden38",show);
+ if(area)area.hidden=show;
+ const manualLabel=document.getElementById("manualContentLabel38");
+ if(manualLabel)manualLabel.hidden=show;
  const wrap=document.getElementById("manualThreadParts38");
  if(!wrap)return;
  if(show){
