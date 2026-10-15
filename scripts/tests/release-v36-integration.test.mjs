@@ -53,12 +53,12 @@ function app(seedPosts=[],seedHistory=[]){
   URL:{createObjectURL:blob=>{const id='blob:'+urls.size;urls.set(id,blob);return id},revokeObjectURL(){}},
   Blob,Date,Intl,console,setInterval:()=>0,setTimeout:()=>123,clearTimeout:()=>{}
  });
+ get('destination').value='X';get('xFormat38').value='single';get('xBudget38').value='240';get('xParts38').value='3';
+ vm.runInContext(xScript,ctx,{filename:'xformat38.js'});
  vm.runInContext(js,ctx,{filename:'index.html'});
  vm.runInContext(hist,ctx,{filename:'history342.js'});
  vm.runInContext(files,ctx,{filename:'import34.js'});
  vm.runInContext(refScript,ctx,{filename:'references37.js'});
- get('xFormat38').value='single';get('xBudget38').value='240';get('xParts38').value='3';
- vm.runInContext(xScript,ctx,{filename:'xformat38.js'});
  get('weekstart').value='2026-10-26';get('destination').value='X';get('generationBatch').value='kai';
  const run=code=>vm.runInContext(code,ctx,{timeout:5000});
  const posts=()=>JSON.parse(storage.get('sns-post-manager-v1')||'[]');
