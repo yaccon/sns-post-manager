@@ -33,6 +33,7 @@ function app(initialPosts=[],initialHistory=[]){
  get('weekstart').value='2026-10-26';get('destination').value='X';
  get('generationBatch').value='kai';get('xFormat38').value='single';get('xBudget38').value='240';get('xParts38').value='3';
  get('refFilter37').value='すべて';
+ get('listAccount').value='all';get('listPlatform').value='all';get('listPeriod').value='all';
  for(const [content,filename] of [[inline,'index.html'],[history,'history342.js'],[imported,'import34.js'],[refs,'references37.js'],[xformat,'xformat38.js']])vm.runInContext(content,c,{filename});
  get('weekstart').value='2026-10-26'; // App initialization sets next day; override after initialization for stable fixture dates.
  return {c,get,data,downloads,run:s=>vm.runInContext(s,c,{timeout:5000}),posts:()=>JSON.parse(data.get('sns-post-manager-v1')||'[]'),confirm:async(yes=true)=>{for(let i=0;i<7&&!get('actionDialog35').open;i++)await Promise.resolve();assert.equal(get('actionDialog35').open,true);get(yes?'actionOk35':'actionCancel35').onclick()}};
