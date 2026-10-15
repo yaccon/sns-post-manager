@@ -1,0 +1,28 @@
+name: Ver3.8 X投稿形式・旧データ安全性
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'postformat38.js'
+      - 'postformat38-qa.js'
+      - 'qa-post-format-v38.html'
+      - 'scripts/tests/post-formats-v38.test.mjs'
+      - 'scripts/tests/release-v36-integration.test.mjs'
+      - 'scripts/tests/reference-library-v37.test.mjs'
+      - '.github/workflows/post-formats-v38.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-post-formats:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check v3.8 browser script syntax
+        run: node --check postformat38.js && node --check postformat38-qa.js
+      - name: Run v3.8, v3.7.1 and v3.6 regression tests
+        run: node --test scripts/tests/post-formats-v38.test.mjs scripts/tests/reference-library-v37.test.mjs scripts/tests/release-v36-integration.test.mjs

@@ -6,6 +6,7 @@ import vm from 'node:vm';
 const html=fs.readFileSync('index.html','utf8');
 const inline=html.match(/<script>([\s\S]*?)<\/script>/)?.[1];
 const library=fs.readFileSync('references37.js','utf8');
+const format38=fs.readFileSync('postformat38.js','utf8');
 const historyJs=fs.readFileSync('history342.js','utf8');
 const importerJs=fs.readFileSync('import34.js','utf8');
 assert.ok(inline);
@@ -53,6 +54,7 @@ function setup(initialPosts=[],initialHistory=[],initialRefs=[]){
  vm.runInContext(importerJs,c,{filename:'import34.js'});
  get('refFilter37').value='すべて';
  get('weekstart').value='2026-10-26';get('destination').value='X';get('generationBatch').value='kai';
+ vm.runInContext(format38,c,{filename:'postformat38.js'});
  vm.runInContext(library,c,{filename:'references37.js'});
  const run=code=>vm.runInContext(code,c,{timeout:5000});
  return {c,get,run,storage,downloads,copyCalls,
@@ -76,7 +78,7 @@ async function restore(a,obj,yes=true){
 }
 test('v3.7 markup and scripts parse; existing post/history key names do not change',()=>{
  for(const code of [inline,library,historyJs,importerJs])assert.doesNotThrow(()=>new vm.Script(code));
- assert.match(html,/Ver\.3\.7/);
+ assert.match(html,/Ver\.3\.8/);
  assert.match(html,/const key="sns-post-manager-v1"/);
  assert.match(html,/const historyKey="sns-post-manager-history-v1"/);
  assert.match(html,/const referenceKey="sns-post-manager-references-v1"/);
@@ -212,7 +214,7 @@ test('export includes reference posts and correct 3-key storage estimates',async
  assert.equal(a.downloads.length,1);
  assert.match(a.downloads[0].name,/sns-post-manager-backup/);
  const data=JSON.parse(await a.downloads[0].blob.text());
- assert.equal(data.version,5);
+ assert.equal(data.version,6);
  assert.equal(data.references.length,1);
  assert.equal(data.references[0].content,'バックアップ用の参考投稿');
  assert.match(a.get('storageUsage342').textContent,/参考投稿/);
