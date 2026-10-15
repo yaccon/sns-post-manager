@@ -99,7 +99,7 @@ async function loadBackup(a,content,accept=true){
 
 test('production candidate parses, retains original storage keys, and has no QA-only features',()=>{
  for(const chunk of [js,hist,files])assert.doesNotThrow(()=>new vm.Script(chunk));
- assert.match(html,/<title>SNS投稿管理 Ver\.3\.(?:6|7)<\/title>/);
+ assert.match(html,/<title>SNS投稿管理 Ver\.3\.(?:6|7)(?:\.1)?<\/title>/);
  assert.match(html,/const key="sns-post-manager-v1"/);
  assert.match(html,/const historyKey="sns-post-manager-history-v1"/);
  assert.match(html,/id="generationBatch"/);
@@ -193,7 +193,7 @@ test('backup export + restore restores deleted posted item; repeat restore adds 
  assert.equal(a.posts().find(x=>x.id==='old').done,true);
  await loadBackup(a,JSON.stringify(data));
  assert.equal(a.posts().length,2);
- assert.match(a.get('backupStatus').textContent,/投稿予定 0件、過去投稿履歴 0件/);
+ assert.match(a.get('backupStatus').textContent,/追加0件/);
 });
 test('canceling restore and invalid JSON preserve existing bytes',async()=>{
  const p={id:'base',account:'カイ',platform:'X',date:'2026-10-26T12:00',content:'残すデータ',done:false};
