@@ -152,6 +152,15 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </section>
 <section class="card ref-library37" id="referenceLibrary37">
 <h2>💡 参考投稿ライブラリ</h2>
+<div class="pill">
+<strong>🧪 架空の参考投稿をワンタップで入力</strong>
+<p class="help">実際のSNS投稿ではないテスト文章です。入力後に「参考投稿を保存」を押してください。</p>
+<div class="row">
+<button type="button" class="secondary" onclick="fillReferenceSample37('kai')">カイ用を入力</button>
+<button type="button" class="secondary" onclick="fillReferenceSample37('junior')">後輩くん用を入力</button>
+<button type="button" class="secondary" onclick="fillReferenceSample37('shared')">共通用を入力</button>
+</div>
+</div>
 <p class="ref-hint37">X・Threadsなどで気に入った投稿の本文を保存し、良かった点をAIで分析して自分の投稿に応用できます。<b>文章の転載・言い換えではなく、構成や読者心理だけを参考にします。</b></p>
 <p class="ref-hint37">外部SNSのURLから本文を自動取得する機能はありません。本文をコピーして貼り付けてください。データはこのブラウザ内に保存され、バックアップにも含まれます。</p>
 <label for="refAccount37">どの企画の参考にする？</label>
@@ -274,6 +283,21 @@ function norm(t){return String(t||"").normalize("NFKC").replace(/\s+/g,"").repla
 // Legacy rows without a platform remain preserved as a separate "unknown" group.
 function historyIdentity(p){
  return JSON.stringify([p.account||"",p.platform||"不明",norm(p.content)]);
+}
+function fillReferenceSample37(kind){
+ const examples={
+  kai:{account:"カイ",source:"X",content:"副業の作業時間が足りないと感じた日、見直したのは新しいAIツールではなく、毎回迷っている作業の順番だった。小さな整理が継続のきっかけになる。",note:"身近な悩みで始まり、意外な着眼点に着地している"},
+  junior:{account:"後輩くん",source:"Threads",content:"最初のスタンプを完成させるまでに、輪郭も色も何度も描き直した。完成品より、その失敗の記録が次に役立つのかもしれない。",note:"制作過程のつまずきを前向きな学びとして描く構成"},
+  shared:{account:"共通",source:"その他",content:"同じテーマでも、最初に読者へ投げる問いを変えると、届く相手は変わる。答えの押し付けより、一緒に考えたくなる余白を残したい。",note:"読者が自分に問いかけられていると感じる文章"}
+ };
+ const e=examples[kind];if(!e)return;
+ document.getElementById("refAccount37").value=e.account;
+ document.getElementById("refSource37").value=e.source;
+ document.getElementById("refUrl37").value="";
+ document.getElementById("refContent37").value=e.content;
+ document.getElementById("refNote37").value=e.note;
+ document.getElementById("refStatus37").textContent="テスト用の参考投稿を入力しました。「参考投稿を保存」を押してください。";
+ document.getElementById("refContent37").scrollIntoView({behavior:"smooth",block:"center"});
 }
 function uiInfo35(message){
  const notice=document.getElementById("notice35");
