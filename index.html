@@ -495,7 +495,8 @@ function copyTextLegacy356(value){
  }catch(e){return false}
 }
 function doCopy356(value,title,chat=false,onSuccess=null){
- pendingCopyOnSuccess356=typeof onSuccess==="function"?onSuccess:null;
+ const completedCallback=typeof onSuccess==="function"?onSuccess:null;
+ pendingCopyOnSuccess356=completedCallback;
  showCopyPanel356(value,title,chat);
  const ok=copyTextLegacy356(value);
  if(ok){
@@ -503,7 +504,7 @@ function doCopy356(value,title,chat=false,onSuccess=null){
   document.getElementById("copyPanel356").hidden=true;
   showCopySuccess357();
   if(chat)showChatLaunch357();
-  if(pendingCopyOnSuccess356)pendingCopyOnSuccess356();
+  if(completedCallback)completedCallback();
   return;
  }
  // Async Clipboard API is attempted while the direct click still owns activation.
@@ -514,7 +515,7 @@ function doCopy356(value,title,chat=false,onSuccess=null){
     document.getElementById("copyPanel356").hidden=true;
     showCopySuccess357();
     if(chat)showChatLaunch357();
-    if(pendingCopyOnSuccess356)pendingCopyOnSuccess356();
+    if(completedCallback)completedCallback();
    }).catch(()=>{
     document.getElementById("copyStatus356").textContent="自動コピーできません。「コピーする」を押してください。";
    });
