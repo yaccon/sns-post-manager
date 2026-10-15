@@ -227,7 +227,7 @@ test('restore references, avoid duplicates and accept v3.6 backup without refere
  assert.equal(a.refs()[0].useForGeneration,true);
  await restore(a,{version:5,posts:[],history:[],references:[one]});
  assert.equal(a.refs().length,1);
- assert.match(a.get('backupStatus').textContent,/参考投稿 0件/);
+ assert.match(a.get('backupStatus').textContent,/追加0件/);
  await restore(a,{version:4,posts:[],history:[]});
  assert.equal(a.refs().length,1);
 });
@@ -251,17 +251,21 @@ test('restore cancel, corrupt references and storage quota error do not lose old
 });
 
 test('the iPhone QA page has three isolated storage keys and fictional sample controls',()=>{
- const qa=fs.readFileSync('qa-references-v37.html','utf8');
+ const qa=fs.readFileSync('qa-references-v371.html','utf8');
  assert.match(qa,/sns-post-manager-test-reference-v37/);
  assert.match(qa,/sns-post-manager-history-test-reference-v37/);
  assert.match(qa,/sns-post-manager-references-test-v37/);
  assert.doesNotMatch(qa,/const key="sns-post-manager-v1"/);
  assert.doesNotMatch(qa,/const referenceKey="sns-post-manager-references-v1"/);
  assert.match(qa,/fillReferenceSample37\('kai'\)/);
- assert.match(qa,/src="references37-qa.js\?v=37"/);
+ assert.match(qa,/src="references371-qa.js\?v=371"/);
+ assert.match(qa,/Ver\.3\.7\.1/);
+ assert.match(qa,/id="refAppliedPreview371"/);
+ assert.match(qa,/id="refRestoreFile371"/);
+ assert.match(qa,/id="refToast371"/);
  assert.match(qa,/src="history342-qa-v37.js\?v=37"/);
 });
 test('the isolated QA scripts match the validated production candidate scripts',()=>{
- assert.equal(fs.readFileSync('references37-qa.js','utf8'),library);
+ assert.equal(fs.readFileSync('references371-qa.js','utf8'),library);
  assert.equal(fs.readFileSync('history342-qa-v37.js','utf8'),historyJs);
 });
