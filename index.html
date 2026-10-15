@@ -553,8 +553,8 @@ let editingId35=null;
 function editPost(id){
  const p=posts.find(x=>x.id===id);if(!p)return;
  editingId35=id;
- document.getElementById("editMeta35").textContent=p.account+" ／ "+p.platform+" ／ "+(p.date||"日時未設定");
- const field=document.getElementById("editField35");field.value=p.content;
+ document.getElementById("editMeta35").textContent=p.account+" ／ "+p.platform+" ／ "+(p.date||"日時未設定")+(getThreadParts38(p)?" ／ スレッドは「===」のみの行でパートを区切って編集してください。":"");
+ const field=document.getElementById("editField35");field.value=getThreadParts38(p)?p.threadParts.join("\n===\n"):p.content;
  const dialog=document.getElementById("editDialog35");
  if(dialog.showModal)dialog.showModal();else dialog.setAttribute("open","");
  field.focus();field.setSelectionRange(field.value.length,field.value.length);
@@ -567,17 +567,33 @@ function cancelEdit35(){
 async function saveEdit35(){
  const p=posts.find(x=>x.id===editingId35);
  if(!p){cancelEdit35();return}
- const content=document.getElementById("editField35").value.trim();
- if(!content){uiInfo35("本文は空にできません");return}
- if(norm(content)!==norm(p.content)){
-  const match=findCollision({account:p.account,platform:p.platform,content},[],p.id);
+ const input=document.getElementById("editField35").value.trim();
+ if(!input){uiInfo35("本文は空にできません");return}
+ let change={content:input};
+ const existingParts=getThreadParts38(p);
+ if(existingParts){
+  const parts=input.split(/\n\s*===\s*\n/g).map(v=>v.trim());
+  if(parts.length!==existingParts.length||parts.some(v=>!v)){
+   uiInfo35("スレッドは全"+existingParts.length+"本を入力し、「===」のみの行で区切ってください。");return
+  }
+  const over=parts.findIndex(part=>xWeightedLength38(part)>280);
+  if(over>=0){uiInfo35("スレッド"+(over+1)+"本目がX上限280カウントを超えています。");return}
+  change={content:parts.join("\n\n"),threadParts:parts,threadCopied:parts.map(()=>false)};
+ }else if(p.platform==="X"){
+  const limit=p.postFormat==="premium"?25000:280;
+  if(xWeightedLength38(input)>limit){uiInfo35("X上限"+limit+"カウントを超えています。本文を短くしてください。");return}
+ }
+ if(norm(change.content)!==norm(p.content)){
+  const match=findCollision({account:p.account,platform:p.platform,content:change.content},[],p.id);
   if(match?.kind==="exact"){uiInfo35("同じSNSの投稿履歴に同じ本文があります。編集しませんでした。");return}
   if(match?.kind==="similar"&&!await uiConfirm35("同じSNSの投稿履歴に似た文章があります。\n"+match.ref.content.slice(0,100)+"\n\n編集を続けますか？"))return;
  }
- const old=p.content;p.content=content;
- if(!persist()){p.content=old;return}
- cancelEdit35();render();uiInfo35("投稿本文を保存しました。");
+ const snapshot={content:p.content,threadParts:p.threadParts,threadCopied:p.threadCopied};
+ Object.assign(p,change);
+ if(!persist()){Object.assign(p,snapshot);return}
+ cancelEdit35();render();uiInfo35(existingParts?"スレッドを保存しました。コピー済み記録は未コピーに戻りました。":"投稿本文を保存しました。");
 }
+
 function localDay(date,offset){const d=new Date(date+"T12:00:00");d.setDate(d.getDate()+offset);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")}
 function generatePrompt(){
 const start=document.getElementById("weekstart").value;if(!start){uiInfo35("開始日を選んでください");return}
@@ -819,14 +835,15 @@ function renderToday(){
   const time=document.createElement("span");time.className="today-time";time.textContent=p.date.slice(11,16)||"時刻未設定";
   const account=document.createElement("span");account.textContent=p.account+" ／ "+p.platform+" ／ "+(p.done?"投稿済み":"未投稿");
   meta.append(time,account);
-  const body=document.createElement("div");body.className="today-body";body.textContent=p.content;
+  const body=formatPostDisplay38(p);
   const actions=document.createElement("div");actions.className="today-actions";
   const copy=document.createElement("button");copy.className="primary";copy.textContent="① 本文コピー";copy.onclick=()=>copyPost(p.id);
   const open=document.createElement("button");open.className="go";open.textContent="② "+p.platform+"を開く";open.onclick=()=>openPlatform(p.id);
   const mark=document.createElement("button");mark.className=p.done?"revert":"mark";
   mark.textContent=p.done?"③ 未投稿に戻す":"③ 投稿済みにする";
   mark.onclick=()=>toggleDone(p.id);
-  actions.append(copy,open,mark);block.append(meta,body,actions);root.appendChild(block);
+  if(getThreadParts38(p))actions.append(open,mark);else actions.append(copy,open,mark);
+  block.append(meta,body,actions);root.appendChild(block);
  }
 }
 
@@ -864,13 +881,11 @@ const checkLabel=document.createElement("label");checkLabel.className="selectpos
 const meta=document.createElement("div");
 meta.className="meta";
 meta.textContent=p.account+" ／ "+p.platform+" ／ "+(p.date?p.date.replace("T"," "):"日時未設定")+(p.done?" ／ 投稿済み":" ／ 未投稿");
-const body=document.createElement("div");
-body.className="body";
-body.textContent=p.content;
+const body=formatPostDisplay38(p);
 const actions=document.createElement("div");
 actions.className="actions";
 [
-["コピー",()=>copyPost(p.id)],
+[getThreadParts38(p)?"先頭（1本目）をコピー":"コピー",()=>copyPost(p.id)],
 ["編集",()=>editPost(p.id)],
 ["投稿先を開く",()=>openPlatform(p.id)],
 [p.done?"未投稿に戻す":"投稿済みにする",()=>toggleDone(p.id)],
