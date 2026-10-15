@@ -686,7 +686,7 @@ function exportBackup(){
  let url=null;
  try{
   // Keep the legacy schema compatible with existing restore functionality.
-  const payload={version:5,exportedAt:new Date().toISOString(),posts,history,references};
+  const payload={version:6,exportedAt:new Date().toISOString(),posts,history,references,formatSettings:formatSettings38};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
   url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -726,6 +726,7 @@ async function restoreBackup(e){
   if(!extra.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"))throw Error("履歴の形式が違います");
   if(data.references!==undefined&&!Array.isArray(data.references))throw Error("参考投稿の形式が違います");
   const importedRefs=Array.isArray(data.references)?data.references:[];
+  const incomingFormats=data&&typeof data==="object"&&!Array.isArray(data)&&data.formatSettings?normalizeFormatSettings38(data.formatSettings):null;
   if(importedRefs.length>500)throw Error("1回の復元で読み込める参考投稿は最大500件です。");
   const cleaned=importedRefs.map(r=>normalizeReference37(r,true));
   const knownRefIds=new Set(references.map(r=>String(r.id)));
@@ -761,6 +762,13 @@ async function restoreBackup(e){
    status.textContent="復元できませんでした。データの保存に失敗しました。";
    refreshBackupStatus();return;
   }
+  let restoredFormat=false,settingWarning="";
+  if(incomingFormats){
+   try{
+    localStorage.setItem(formatSettingsKey38,JSON.stringify(incomingFormats));
+    formatSettings38=incomingFormats;formatInit38();restoredFormat=true;
+   }catch(e){settingWarning="（投稿形式設定だけは保存できませんでした。現在の設定を維持しました）"}
+  }
   render();
   renderReferenceLibrary37();
   refreshBackupStatus();
@@ -768,7 +776,8 @@ async function restoreBackup(e){
   status.textContent=additions
    ?"✓ 復元成功：投稿予定 "+addedPosts+"件・過去履歴 "+addedHistory+"件・参考投稿 "+addedRefs+"件を追加しました。"
    :"✓ ファイル確認完了：追加0件。すべて登録済み、またはこのファイルに新しいデータがありません。故障ではありません。";
-  if(typeof showReferenceNotice371==="function")showReferenceNotice371(additions?"✓ バックアップから復元しました":"✓ 追加0件：すべて登録済みです");
+  status.textContent+=restoredFormat?" ／ 投稿形式設定も復元しました。":settingWarning;
+  if(typeof showReferenceNotice371==="function")showReferenceNotice371(additions?"✓ バックアップから復元しました":restoredFormat?"✓ 投稿形式設定を復元しました":"✓ 追加0件：すべて登録済みです");
  }catch(err){
   status.textContent="復元できません："+String(err?.message||err);
   uiInfo35(status.textContent);
