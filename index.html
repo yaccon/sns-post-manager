@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SNS投稿管理 Ver.3.6</title>
+<title>SNS投稿管理 Ver.3.7</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f4f6fa;color:#222;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
@@ -92,11 +92,27 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .copy-toast357{position:fixed;left:12px;right:12px;bottom:20px;z-index:110;max-width:630px;margin:0 auto;background:#174a35;color:white;border-radius:12px;padding:16px;font-size:16px;font-weight:bold;box-shadow:0 5px 18px #0004;text-align:center;pointer-events:none}
 .copy-toast357[hidden]{display:none}
 #chatLaunch357{display:none;width:100%;text-align:center;background:#e6f2ff;color:#0d3f85;text-decoration:none;border:2px solid #5083b5;border-radius:10px;padding:14px;font-size:17px;font-weight:700;margin-top:10px}
+
+/* v3.7 local reference library — optimized for iPhone */
+.ref-item37{border-top:1px solid #dbe3ee;padding:16px 0}
+.ref-item37:first-child{border-top:0}
+.ref-body37{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;margin:10px 0}
+.ref-note37{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:#536174;background:#f5f8fc;border-radius:8px;padding:10px}
+.ref-link37{display:inline-block;padding:9px 0;font-size:14px;color:#1d4ed8;font-weight:bold}
+.ref-actions37{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}
+.ref-actions37 button{margin:0;min-height:45px;font-size:13px;overflow-wrap:anywhere}
+.ref-actions37 button:nth-child(3){grid-column:1/-1}
+.ref-library37 textarea{line-height:1.65}
+.ref-library37 .ref-hint37{font-size:13px;line-height:1.7;color:#4b596d}
+.ref-library37 .row button{min-height:44px}
+#referenceUsageSummary37{white-space:pre-wrap;line-height:1.7;font-size:13px;color:#19538a;background:#eef6ff;border-radius:9px;padding:11px;margin:10px 0}
+#referenceList37{max-height:800px;overflow:auto}
+@media(min-width:560px){.ref-actions37{grid-template-columns:repeat(3,minmax(0,1fr))}.ref-actions37 button:nth-child(3){grid-column:auto}}
 </style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.6</h1>
+<h1>SNS投稿管理 Ver.3.7</h1>
 <p>X・Threadsの投稿管理、履歴の重複防止、バックアップ。データはこの端末のブラウザ内に保存されます。</p>
 </header>
 <section id="copyPanel356" class="card" hidden aria-label="コピー用の文章" style="border:2px solid #3575aa;margin:12px auto;max-width:650px"><h2 id="copyTitle356">コピー用文章</h2><p id="copyStatus356" class="help" role="status"></p><textarea id="copyField356" rows="8" readonly aria-label="コピー用テキスト" style="min-height:190px;user-select:text;-webkit-user-select:text"></textarea><div class="row"><button type="button" class="primary" onclick="retryCopy356()">コピーする</button><a id="chatLink356" href="https://chatgpt.com/" target="_blank" rel="noopener" style="display:none;padding:14px;font-weight:bold">ChatGPTを開く ↗</a></div></section><div id="notice35" class="qa-notice35" role="status" hidden><button type="button" onclick="document.getElementById('notice35').hidden=true" aria-label="お知らせを閉じる">×</button><span id="noticeMessage35"></span></div>
@@ -119,6 +135,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <label for="destination">投稿先</label><select id="destination"><option>X</option><option>Threads</option></select>
 <label for="generationBatch">生成する本数</label><select id="generationBatch"><option value="all">全42本まとめて（従来どおり）</option><option value="kai">カイ14本</option><option value="kouhai">後輩くん14本</option><option value="manga">漫画・恋愛14本</option></select>
 <p class="help">42本で文章が途切れる場合は、各アカウント14本ずつ生成・登録できます。途中まで登録しても既存の投稿は消えません。</p>
+<p id="referenceUsageSummary37" role="status">参考投稿ライブラリを読み込み中...</p>
 <button class="primary" onclick="generatePrompt()">① 生成指示をコピー</button>
 <a id="chatLaunch357" href="https://chatgpt.com/" target="_blank" rel="noopener">② ChatGPTを開く ↗</a>
 <p id="chatHelp357" class="help">生成指示をコピーすると、ChatGPTを開くボタンが表示されます。</p>
@@ -128,6 +145,38 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <button class="secondary" onclick="pasteGeneratedJson()">📋 クリップボードからJSONを貼り付ける</button>
 <button class="primary" onclick="importPosts()">③ 内容を確認して一括登録</button>
 <p class="status" id="importStatus" role="status"></p><div id="importReview" aria-live="polite"></div>
+</section>
+<section class="card ref-library37" id="referenceLibrary37">
+<h2>💡 参考投稿ライブラリ</h2>
+<p class="ref-hint37">X・Threadsなどで気に入った投稿の本文を保存し、良かった点をAIで分析して自分の投稿に応用できます。<b>文章の転載・言い換えではなく、構成や読者心理だけを参考にします。</b></p>
+<p class="ref-hint37">外部SNSのURLから本文を自動取得する機能はありません。本文をコピーして貼り付けてください。データはこのブラウザ内に保存され、バックアップにも含まれます。</p>
+<label for="refAccount37">どの企画の参考にする？</label>
+<select id="refAccount37"><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option><option>共通</option></select>
+<label for="refSource37">参考投稿の掲載先</label>
+<select id="refSource37"><option>X</option><option>Threads</option><option>その他</option></select>
+<label for="refUrl37">元の投稿URL（任意）</label>
+<input id="refUrl37" type="url" inputmode="url" autocomplete="off" placeholder="https://...">
+<label for="refContent37">参考投稿の本文（必須・3,000文字以内）</label>
+<textarea id="refContent37" maxlength="3000" rows="6" placeholder="気に入った投稿の本文をコピーして貼り付け"></textarea>
+<label for="refNote37">どこが良いと思った？（任意・500文字以内）</label>
+<textarea id="refNote37" maxlength="500" rows="3" placeholder="例：冒頭が気になる／読者の不安を言語化している／話の展開が上手い"></textarea>
+<div class="row">
+<button id="refSave37" type="button" class="primary" onclick="saveReference37()">参考投稿を保存</button>
+<button id="refCancelEdit37" type="button" class="secondary" onclick="referenceResetForm37()" hidden>編集をキャンセル</button>
+</div>
+<p id="refStatus37" class="status" role="status" aria-live="polite"></p>
+<div class="pill" style="margin-top:15px">
+<strong>保存した参考投稿</strong>
+<p id="refCount37" class="help">読み込み中...</p>
+<p class="help">「＋ 生成に使う」を押した参考投稿だけを、次回の14本・42本生成指示に反映します。各企画最大5件、★の投稿を優先します。対象が「共通」の参考投稿は全企画に使えます。</p>
+</div>
+<label for="refFilter37">企画で絞り込み</label>
+<select id="refFilter37" onchange="renderReferenceLibrary37()"><option>すべて</option><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option><option>共通</option></select>
+<label for="refSearch37">参考投稿を検索</label>
+<input id="refSearch37" type="search" placeholder="本文・メモ・URLのキーワード" oninput="renderReferenceLibrary37()">
+<div id="referenceList37" aria-live="polite"></div>
+<a href="https://chatgpt.com/" target="_blank" rel="noopener" id="refChatLink37" class="ref-link37">分析指示を貼り付ける：ChatGPTを開く ↗</a>
+<p id="refAnalysisHint37" class="help" aria-live="polite">参考投稿の「AI分析指示をコピー」を押し、ChatGPTに貼り付けて分析できます。</p>
 </section>
 <section class="card">
 <h2>新しい投稿</h2>
