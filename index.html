@@ -439,20 +439,28 @@ function findCollision(item,extra=[],excludeId=null){
  return best;
 }
 async function savePost(){
- const content=document.getElementById("content").value.trim();
- if(!content){uiInfo35("投稿文を入力してください");return}
  const account=document.getElementById("account").value;
  const platform=document.getElementById("platform").value;
- const match=findCollision({account,platform,content});
+ const draft=collectManualFormat38(platform,document.getElementById("content").value);
+ if(!draft.content||platform==="X"&&formatSettings38.xFormat==="thread"&&draft.threadParts.some(p=>!p)){
+  uiInfo35("投稿文を入力してください。スレッドはすべてのパートが必要です。");return
+ }
+ const validated=validateGeneratedFormat38(draft,platform);
+ if(validated.error){uiInfo35(validated.error);return}
+ const match=findCollision({account,platform,content:validated.content});
  if(match?.kind==="exact"){uiInfo35("投稿履歴に同じ本文があります。登録しませんでした。");return}
  if(match?.kind==="similar"&&!await uiConfirm35("過去に似た文章があります（類似度約"+Math.round(match.score*100)+"%）。\n"+match.ref.content.slice(0,90)+"\n\nそれでも登録しますか？"))return;
- const item={id:Date.now()+"-"+Math.random(),account,platform:document.getElementById("platform").value,date:document.getElementById("date").value,content,done:false};
+ const item={id:Date.now()+"-"+Math.random(),account,platform,
+  date:document.getElementById("date").value,...validated,done:false};
  posts.push(item);
  if(!persist()){posts.pop();return}
  document.getElementById("content").value="";
+ clearManualFormat38();
  render();
 }
+
 let pendingCopyText356="";
+let pendingCopyOnSuccess356=null;
 let copyToastTimer357=null;
 function showCopySuccess357(){
  const toast=document.getElementById("copyToast357");
@@ -486,7 +494,8 @@ function copyTextLegacy356(value){
   return document.execCommand("copy")===true;
  }catch(e){return false}
 }
-function doCopy356(value,title,chat=false){
+function doCopy356(value,title,chat=false,onSuccess=null){
+ pendingCopyOnSuccess356=typeof onSuccess==="function"?onSuccess:null;
  showCopyPanel356(value,title,chat);
  const ok=copyTextLegacy356(value);
  if(ok){
@@ -494,6 +503,7 @@ function doCopy356(value,title,chat=false){
   document.getElementById("copyPanel356").hidden=true;
   showCopySuccess357();
   if(chat)showChatLaunch357();
+  if(pendingCopyOnSuccess356)pendingCopyOnSuccess356();
   return;
  }
  // Async Clipboard API is attempted while the direct click still owns activation.
@@ -504,15 +514,17 @@ function doCopy356(value,title,chat=false){
     document.getElementById("copyPanel356").hidden=true;
     showCopySuccess357();
     if(chat)showChatLaunch357();
+    if(pendingCopyOnSuccess356)pendingCopyOnSuccess356();
    }).catch(()=>{
     document.getElementById("copyStatus356").textContent="自動コピーできません。「コピーする」を押してください。";
    });
   }
  }catch(e){}
 }
-function retryCopy356(){doCopy356(pendingCopyText356,document.getElementById("copyTitle356").textContent,document.getElementById("chatLink356").style.display!=="none")}
+function retryCopy356(){doCopy356(pendingCopyText356,document.getElementById("copyTitle356").textContent,document.getElementById("chatLink356").style.display!=="none",pendingCopyOnSuccess356)}
 function copyPost(id){
  const p=posts.find(x=>x.id===id);if(!p)return;
+ if(getThreadParts38(p)){copyThreadPart38(id,0);return}
  doCopy356(p.content,"投稿本文をコピー",false);
 }
 function fallbackCopy(text){doCopy356(text,"投稿本文をコピー",false)}
