@@ -4,7 +4,7 @@
  * No background posting or paid API required.
  */
 const formatSettingsKey38="sns-post-manager-format-settings-v1";
-const defaultFormatSettings38={xFormat:"single",xTarget:"120",threadCount:3,premiumTarget:"800"};
+const defaultFormatSettings38={xFormat:"single",xTarget:"120",threadCount:3,premiumTarget:"800",threadsTarget:"200"};
 function normalizeFormatSettings38(raw){
  const obj=raw&&typeof raw==="object"&&!Array.isArray(raw)?raw:{};
  const xFormat=["single","thread","premium"].includes(obj.xFormat)?obj.xFormat:"single";
@@ -12,7 +12,8 @@ function normalizeFormatSettings38(raw){
  const num=Number(obj.threadCount);
  const threadCount=Number.isInteger(num)&&num>=2&&num<=5?num:3;
  const premiumTarget=["300","800","1500","3000"].includes(String(obj.premiumTarget))?String(obj.premiumTarget):"800";
- return {xFormat,xTarget,threadCount,premiumTarget};
+ const threadsTarget=["100","150","200","300","400","450","500","auto"].includes(String(obj.threadsTarget))?String(obj.threadsTarget):"200";
+ return {xFormat,xTarget,threadCount,premiumTarget,threadsTarget};
 }
 function loadFormatSettings38(){
  try{return normalizeFormatSettings38(JSON.parse(localStorage.getItem(formatSettingsKey38)||"{}"))}
@@ -36,7 +37,7 @@ function formatConfigurationSummary38(){
   :"無料X・通常1本（日本語"+(s.xTarget==="auto"?"上限内":s.xTarget+"文字目安")+"）";
 }
 function formatInit38(){
- const ids=[["xFormat38","xFormat"],["xTarget38","xTarget"],["threadCount38","threadCount"],["premiumTarget38","premiumTarget"]];
+ const ids=[["xFormat38","xFormat"],["xTarget38","xTarget"],["threadCount38","threadCount"],["premiumTarget38","premiumTarget"],["threadsTarget38","threadsTarget"]];
  for(const [id,key] of ids){
   const el=document.getElementById(id);
   if(el)el.value=String(formatSettings38[key]);
@@ -48,7 +49,8 @@ function formatSelectionChanged38(){
   xFormat:document.getElementById("xFormat38").value,
   xTarget:document.getElementById("xTarget38").value,
   threadCount:Number(document.getElementById("threadCount38").value),
-  premiumTarget:document.getElementById("premiumTarget38").value
+  premiumTarget:document.getElementById("premiumTarget38").value,
+  threadsTarget:document.getElementById("threadsTarget38").value
  };
  const previous=formatSettings38;
  const next=normalizeFormatSettings38(values);
@@ -61,7 +63,7 @@ function formatSelectionChanged38(){
   formatSettings38=previous;
   const status=document.getElementById("formatStatus38");
   if(status)status.textContent="設定を保存できませんでした。空き容量やブラウザ設定を確認してください。";
-  for(const [id,key] of [["xFormat38","xFormat"],["xTarget38","xTarget"],["threadCount38","threadCount"],["premiumTarget38","premiumTarget"]]){
+  for(const [id,key] of [["xFormat38","xFormat"],["xTarget38","xTarget"],["threadCount38","threadCount"],["premiumTarget38","premiumTarget"],["threadsTarget38","threadsTarget"]]){
    document.getElementById(id).value=String(previous[key]);
   }
  }
@@ -72,6 +74,8 @@ function refreshFormatUi38(){
  const destination=document.getElementById("destination")?.value||"X";
  const xPanel=document.getElementById("xFormatPanel38");
  if(xPanel)xPanel.hidden=destination!=="X";
+ const threadsPanel=document.getElementById("threadsTargetPanel38");
+ if(threadsPanel)threadsPanel.hidden=destination!=="Threads";
  const parts=document.getElementById("threadCountGroup38");
  if(parts)parts.hidden=s.xFormat!=="thread";
  const length=document.getElementById("xTargetGroup38");
@@ -79,7 +83,7 @@ function refreshFormatUi38(){
  const premium=document.getElementById("premiumTargetGroup38");
  if(premium)premium.hidden=s.xFormat!=="premium";
  const summary=document.getElementById("formatSummary38");
- if(summary)summary.textContent=destination==="X"?formatConfigurationSummary38():"Threads：既存の通常投稿形式で生成します。Xの設定は保存したままです。";
+ if(summary)summary.textContent=destination==="X"?formatConfigurationSummary38():"Threads：通常投稿1本・日本語"+(s.threadsTarget==="auto"?"500文字以内で自動調整":s.threadsTarget+"文字目安")+"。Xの設定は保持します。";
  refreshManualThread38();
 }
 function formatTargetRule38(){
@@ -88,7 +92,10 @@ function formatTargetRule38(){
  return "各投稿は日本語で約"+s.xTarget+"文字を目標とし、Xの加重文字数280以内を厳守。日本語は原則1文字2カウントで、URLは通常23カウントとする。";
 }
 function formatGenerationInstruction38(platform){
- if(platform!=="X")return "\n投稿形式：Threadsの通常投稿1本。X向けの形式選択は今回適用しない。";
+ if(platform!=="X")return "\n【Threads投稿形式：通常投稿1本】\nThreadsの通常投稿1本を各予定枠に作成。"+
+  (formatSettings38.threadsTarget==="auto"?"500文字以内で読みやすく調整する。":"各投稿は日本語で約"+formatSettings38.threadsTarget+"文字を目標とする。")+
+  "本文は日本語・記号・改行を含め通常投稿500文字以内を厳守する。10,000文字の長文添付は別機能なので利用しない。"+
+  "JSONは従来どおりaccount,platform,date,contentを含め、threadPartsは含めない。Xの加重280カウントを適用しない。";
  const s=formatSettings38;
  if(s.xFormat==="thread")return "\n【X投稿形式：無料アカウント向けスレッド】\n"+
   "各予定枠は1つのスレッドとして作り、各枠"+s.threadCount+"投稿分の本文を生成してください（予定枠の数は増やさない）。各投稿は"+formatTargetRule38()+
@@ -127,10 +134,16 @@ function xWeightedLength38(value){
  }
  return result+countText(s.slice(prev));
 }
+/* UTF-16 code units are a deliberately conservative approximate limit for Threads;
+ * emoji sequences may count differently in the native composer. */
+function threadsTextLength38(value){return String(value||"").length}
 function validateGeneratedFormat38(item,platform="X"){
  if(platform!=="X"){
   if(Array.isArray(item.threadParts))return {error:"Threadsは通常1本です。スレッド配列を取り込むことはできません。"};
-  return {content:String(item.content||"").trim(),postFormat:"single"};
+  const content=String(item.content||"").trim();
+  const length=threadsTextLength38(content);
+  if(length>500)return {error:"Threads通常投稿の500文字を超えています（概算"+length+"文字）。短く修正してください。長文テキスト添付は別操作です。"};
+  return {content,postFormat:"single"};
  }
  const mode=formatSettings38.xFormat;
  if(mode==="thread"){
@@ -246,6 +259,12 @@ function formatPostDisplay38(post){
   const meter=document.createElement("p");meter.className="format-meter38";
   meter.textContent=formatLabel38(post)+" ／ Xカウント概算："+xWeightedLength38(post.content)+"/"+(post.postFormat==="premium"?"25,000":"280");
   if(xWeightedLength38(post.content)>(post.postFormat==="premium"?25000:280))meter.className+=" format-over38";
+  body.appendChild(meter);
+ }else if(post.platform==="Threads"){
+  const meter=document.createElement("p");meter.className="format-meter38";
+  const count=threadsTextLength38(post.content);
+  meter.textContent="Threads文字数（概算）："+count+"/500";
+  if(count>500)meter.className+=" format-over38";
   body.appendChild(meter);
  }
  return body;
