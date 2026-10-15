@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SNS投稿管理 Ver.3.6</title>
+<title>SNS投稿管理 Ver.3.7.1</title>
 <style>
 *{box-sizing:border-box}
 body{margin:0;background:#f4f6fa;color:#222;font-family:-apple-system,BlinkMacSystemFont,sans-serif}
@@ -92,17 +92,51 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 .copy-toast357{position:fixed;left:12px;right:12px;bottom:20px;z-index:110;max-width:630px;margin:0 auto;background:#174a35;color:white;border-radius:12px;padding:16px;font-size:16px;font-weight:bold;box-shadow:0 5px 18px #0004;text-align:center;pointer-events:none}
 .copy-toast357[hidden]{display:none}
 #chatLaunch357{display:none;width:100%;text-align:center;background:#e6f2ff;color:#0d3f85;text-decoration:none;border:2px solid #5083b5;border-radius:10px;padding:14px;font-size:17px;font-weight:700;margin-top:10px}
+
+/* v3.7 local reference library — optimized for iPhone */
+.ref-item37{border-top:1px solid #dbe3ee;padding:16px 0}
+.ref-item37:first-child{border-top:0}
+.ref-body37{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.7;margin:10px 0}
+.ref-note37{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;color:#536174;background:#f5f8fc;border-radius:8px;padding:10px}
+.ref-link37{display:inline-block;padding:9px 0;font-size:14px;color:#1d4ed8;font-weight:bold}
+.ref-actions37{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:9px}
+.ref-actions37 button{margin:0;min-height:45px;font-size:13px;overflow-wrap:anywhere}
+.ref-actions37 button:nth-child(3){grid-column:1/-1}
+.ref-library37 textarea{line-height:1.65}
+.ref-library37 .ref-hint37{font-size:13px;line-height:1.7;color:#4b596d}
+.ref-library37 .row button{min-height:44px}
+#referenceUsageSummary37{white-space:pre-wrap;line-height:1.7;font-size:13px;color:#19538a;background:#eef6ff;border-radius:9px;padding:11px;margin:10px 0}
+#referenceList37{max-height:800px;overflow:auto}
+@media(min-width:560px){.ref-actions37{grid-template-columns:repeat(3,minmax(0,1fr))}.ref-actions37 button:nth-child(3){grid-column:auto}}
+
+/* Ver.3.7.1: visible ON/OFF feedback and reference-only backups */
+.ref-state371{font-size:14px;line-height:1.7;background:#edf1f6;border:1px solid #cbd5e1;color:#243b5a;border-radius:9px;padding:10px;margin:9px 0;font-weight:700}
+.ref-chosen371{border-left:4px solid #208552;padding-left:12px}
+.ref-chosen371 .ref-state371{background:#e5f6ed;border-color:#80c9a2;color:#155a38}
+.ref-actions37 .ref-active371{background:#166534;color:#fff;border:2px solid #166534}
+.ref-actions37 .ref-favorite371{background:#f9e6a2;color:#5f4502;border:2px solid #d6a832}
+.ref-toast371{position:fixed;z-index:111;bottom:20px;left:12px;right:12px;max-width:640px;margin:0 auto;background:#155a38;color:#fff;padding:16px 12px;font-size:16px;font-weight:bold;text-align:center;border-radius:12px;box-shadow:0 6px 22px #0004;pointer-events:none}
+.ref-toast371[hidden],#refCommitRestore371[hidden]{display:none!important}
+.ref-preview-box371{border:2px solid #a3c2e9;border-radius:12px;background:#f5f9ff;padding:12px;margin:10px 0}
+.ref-preview-box371 strong{font-size:14px;color:#173e76}
+.ref-preview-line371{font-size:13px;line-height:1.7;color:#263c56;overflow-wrap:anywhere;white-space:pre-wrap;margin:9px 0}
+.ref-preview-note371{font-size:12px;line-height:1.7;color:#56677d;border-top:1px solid #d9e4f3;padding-top:8px}
+#refBackupStatus371{white-space:pre-wrap;line-height:1.8;color:#174a34;font-weight:700}
+#refBackupPanel371{background:#f1f8f4;border:1px solid #91c4a6;padding:12px;border-radius:12px;margin-top:17px}
+#refBackupPanel371 input[type=file]{min-height:52px;background:#fff}
+#refBackupPanel371 .primary,#refBackupPanel371 .secondary{min-height:48px}
 </style>
 </head>
 <body>
 <header>
-<h1>SNS投稿管理 Ver.3.6</h1>
+<h1>SNS投稿管理 Ver.3.7.1</h1>
 <p>X・Threadsの投稿管理、履歴の重複防止、バックアップ。データはこの端末のブラウザ内に保存されます。</p>
 </header>
 <section id="copyPanel356" class="card" hidden aria-label="コピー用の文章" style="border:2px solid #3575aa;margin:12px auto;max-width:650px"><h2 id="copyTitle356">コピー用文章</h2><p id="copyStatus356" class="help" role="status"></p><textarea id="copyField356" rows="8" readonly aria-label="コピー用テキスト" style="min-height:190px;user-select:text;-webkit-user-select:text"></textarea><div class="row"><button type="button" class="primary" onclick="retryCopy356()">コピーする</button><a id="chatLink356" href="https://chatgpt.com/" target="_blank" rel="noopener" style="display:none;padding:14px;font-weight:bold">ChatGPTを開く ↗</a></div></section><div id="notice35" class="qa-notice35" role="status" hidden><button type="button" onclick="document.getElementById('notice35').hidden=true" aria-label="お知らせを閉じる">×</button><span id="noticeMessage35"></span></div>
 <dialog id="actionDialog35" class="qa-dialog35" aria-label="確認"><h2>内容を確認</h2><p id="actionMessage35"></p><div id="actionPhraseBox35" hidden><label for="actionPhrase35">確認用の言葉を入力</label><input id="actionPhrase35" type="text" autocomplete="off"></div><div class="row"><button id="actionOk35" type="button" class="primary">実行する</button><button id="actionCancel35" type="button" class="secondary">キャンセル</button></div></dialog>
 <dialog id="editDialog35" class="qa-dialog35" aria-label="投稿を編集"><h2>投稿本文を編集</h2><p class="help" id="editMeta35"></p><textarea id="editField35" rows="10" spellcheck="true" aria-label="編集する投稿本文"></textarea><div class="row"><button type="button" class="primary" onclick="saveEdit35()">変更を保存</button><button type="button" class="secondary" onclick="cancelEdit35()">編集をキャンセル</button></div></dialog>
-<div id="copyToast357" class="copy-toast357" role="status" aria-live="polite" hidden>✓ コピーしました</div><main>
+<div id="copyToast357" class="copy-toast357" role="status" aria-live="polite" hidden>✓ コピーしました</div>
+<div id="refToast371" class="ref-toast371" role="status" aria-live="polite" hidden>✓ 保存しました</div><main>
 
 <section class="card today-card" id="todaySection">
 <h2>📌 今日の投稿 <span id="todayDate" class="today-date"></span></h2>
@@ -117,8 +151,10 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <div class="pill">カイ・後輩くん・漫画恋愛 各14本 ／ 合計42本<br>毎日12:00・20:00 ／ API追加料金0円</div>
 <label for="weekstart">投稿を始める日</label><input type="date" id="weekstart">
 <label for="destination">投稿先</label><select id="destination"><option>X</option><option>Threads</option></select>
-<label for="generationBatch">生成する本数</label><select id="generationBatch"><option value="all">全42本まとめて（従来どおり）</option><option value="kai">カイ14本</option><option value="kouhai">後輩くん14本</option><option value="manga">漫画・恋愛14本</option></select>
+<label for="generationBatch">生成する本数</label><select id="generationBatch" onchange="refreshReferencePreview371()"><option value="all">全42本まとめて（従来どおり）</option><option value="kai">カイ14本</option><option value="kouhai">後輩くん14本</option><option value="manga">漫画・恋愛14本</option></select>
 <p class="help">42本で文章が途切れる場合は、各アカウント14本ずつ生成・登録できます。途中まで登録しても既存の投稿は消えません。</p>
+<p id="referenceUsageSummary37" role="status">参考投稿ライブラリを読み込み中...</p>
+<div id="refAppliedPreview371" class="ref-preview-box371" aria-live="polite"></div>
 <button class="primary" onclick="generatePrompt()">① 生成指示をコピー</button>
 <a id="chatLaunch357" href="https://chatgpt.com/" target="_blank" rel="noopener">② ChatGPTを開く ↗</a>
 <p id="chatHelp357" class="help">生成指示をコピーすると、ChatGPTを開くボタンが表示されます。</p>
@@ -128,6 +164,49 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <button class="secondary" onclick="pasteGeneratedJson()">📋 クリップボードからJSONを貼り付ける</button>
 <button class="primary" onclick="importPosts()">③ 内容を確認して一括登録</button>
 <p class="status" id="importStatus" role="status"></p><div id="importReview" aria-live="polite"></div>
+</section>
+<section class="card ref-library37" id="referenceLibrary37">
+<h2>💡 参考投稿ライブラリ</h2>
+<p class="ref-hint37">X・Threadsなどで気に入った投稿の本文を保存し、良かった点をAIで分析して自分の投稿に応用できます。<b>文章の転載・言い換えではなく、構成や読者心理だけを参考にします。</b></p>
+<p class="ref-hint37">外部SNSのURLから本文を自動取得する機能はありません。本文をコピーして貼り付けてください。データはこのブラウザ内に保存され、バックアップにも含まれます。</p>
+<label for="refAccount37">どの企画の参考にする？</label>
+<select id="refAccount37"><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option><option>共通</option></select>
+<label for="refSource37">参考投稿の掲載先</label>
+<select id="refSource37"><option>X</option><option>Threads</option><option>その他</option></select>
+<label for="refUrl37">元の投稿URL（任意）</label>
+<input id="refUrl37" type="url" inputmode="url" autocomplete="off" placeholder="https://...">
+<label for="refContent37">参考投稿の本文（必須・3,000文字以内）</label>
+<textarea id="refContent37" maxlength="3000" rows="6" placeholder="気に入った投稿の本文をコピーして貼り付け"></textarea>
+<label for="refNote37">どこが良いと思った？（任意・500文字以内）</label>
+<textarea id="refNote37" maxlength="500" rows="3" placeholder="例：冒頭が気になる／読者の不安を言語化している／話の展開が上手い"></textarea>
+<div class="row">
+<button id="refSave37" type="button" class="primary" onclick="saveReference37()">参考投稿を保存</button>
+<button id="refCancelEdit37" type="button" class="secondary" onclick="referenceResetForm37()" hidden>編集をキャンセル</button>
+</div>
+<p id="refStatus37" class="status" role="status" aria-live="polite"></p>
+<div class="pill" style="margin-top:15px">
+<strong>保存した参考投稿</strong>
+<p id="refCount37" class="help">読み込み中...</p>
+<p class="help"><b>「生成に反映：ON」が必要です。</b> ★のお気に入りだけでは生成には反映されません。選んだ投稿は画面上部の「今回反映する参考投稿」に表示されます。</p>
+<p class="help">「生成に反映：OFF」を押してONにした参考投稿だけを、次回の14本・42本生成指示に反映します。各企画最大5件、★の投稿を優先します。対象が「共通」の参考投稿は全企画に使えます。</p>
+</div>
+<label for="refFilter37">企画で絞り込み</label>
+<select id="refFilter37" onchange="renderReferenceLibrary37()"><option>すべて</option><option>カイ</option><option>後輩くん</option><option>漫画・恋愛</option><option>共通</option></select>
+<label for="refSearch37">参考投稿を検索</label>
+<input id="refSearch37" type="search" placeholder="本文・メモ・URLのキーワード" oninput="renderReferenceLibrary37()">
+<div id="referenceList37" aria-live="polite"></div>
+<div id="refBackupPanel371">
+<h3 style="font-size:15px;margin:0 0 8px">参考投稿だけをバックアップ・復元</h3>
+<p class="help">投稿予定と過去履歴は変更しません。参考投稿だけをJSONで保存できます。復元は<b>① ファイル選択 → 追加件数の確認 → ② 復元</b>の順です。</p>
+<button type="button" class="secondary" onclick="referenceExport371()">① 参考投稿だけをバックアップ保存</button>
+<label for="refRestoreFile371">バックアップファイルを選択（JSON）</label>
+<input type="file" id="refRestoreFile371" accept=".json,application/json" onchange="prepareReferenceRestore371(event)">
+<button type="button" class="primary" id="refCommitRestore371" onclick="commitReferenceRestore371()" hidden>② 参考投稿を復元する</button>
+<p id="refBackupStatus371" role="status" aria-live="polite">ファイルを選ぶと、追加される参考投稿の件数を表示します。古いVer.3.6のバックアップには参考投稿は含まれません。</p>
+</div>
+
+<a href="https://chatgpt.com/" target="_blank" rel="noopener" id="refChatLink37" class="ref-link37">分析指示を貼り付ける：ChatGPTを開く ↗</a>
+<p id="refAnalysisHint37" class="help" aria-live="polite">参考投稿の「AI分析指示をコピー」を押し、ChatGPTに貼り付けて分析できます。</p>
 </section>
 <section class="card">
 <h2>新しい投稿</h2>
@@ -211,9 +290,11 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <script>
 const key="sns-post-manager-v1";
 const historyKey="sns-post-manager-history-v1";
-let posts=[];let history=[];let currentFilter="all";const selected=new Set();let pendingImport=null;
+const referenceKey="sns-post-manager-references-v1";
+let posts=[];let history=[];let references=[];let currentFilter="all";const selected=new Set();let pendingImport=null;
 try{posts=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(posts))posts=[]}catch(e){posts=[]}
 try{history=JSON.parse(localStorage.getItem(historyKey)||"[]");if(!Array.isArray(history))history=[]}catch(e){history=[]}
+try{references=JSON.parse(localStorage.getItem(referenceKey)||"[]");if(!Array.isArray(references))references=[]}catch(e){references=[]}
 function norm(t){return String(t||"").normalize("NFKC").replace(/\s+/g,"").replace(/[。、！？!?,.「」『』"'’‘“”・:：;；]/g,"").toLowerCase()}
 // Account + destination + normalized text identify a saved post.
 // Legacy rows without a platform remain preserved as a separate "unknown" group.
@@ -258,14 +339,16 @@ function addHistory(entries){
 addHistory(posts);
 function persist(){
  const previousHistory=history.slice();
- let storedPosts=null,storedHistory=null,snapshotTaken=false,rollbackFailed=false;
+ let storedPosts=null,storedHistory=null,storedReferences=null,snapshotTaken=false,rollbackFailed=false;
  try{
  storedPosts=localStorage.getItem(key);
  storedHistory=localStorage.getItem(historyKey);
+ storedReferences=localStorage.getItem(referenceKey);
  snapshotTaken=true;
  addHistory(posts);
  localStorage.setItem(key,JSON.stringify(posts));
  localStorage.setItem(historyKey,JSON.stringify(history));
+ localStorage.setItem(referenceKey,JSON.stringify(references));
  return true;
  }catch(e){
  history=previousHistory;
@@ -273,6 +356,7 @@ function persist(){
   try{
    if(storedPosts===null)localStorage.removeItem(key);else localStorage.setItem(key,storedPosts);
    if(storedHistory===null)localStorage.removeItem(historyKey);else localStorage.setItem(historyKey,storedHistory);
+   if(storedReferences===null)localStorage.removeItem(referenceKey);else localStorage.setItem(referenceKey,storedReferences);
   }catch(rollbackError){rollbackFailed=true}
  }
  uiInfo35("保存できませんでした。ブラウザの保存設定や空き容量を確認してください。"+(rollbackFailed?" 保存状態を確認し、バックアップから復元してください。":""));
@@ -440,7 +524,7 @@ const batchAccount={kai:"カイ",kouhai:"後輩くん",manga:"漫画・恋愛"}[
 const slots=batchAccount?allSlots.filter(s=>s.account===batchAccount):allSlots;
 const recentHistory=history.filter(p=>!batchAccount||p.account===batchAccount).slice(-150).map(p=>({account:p.account,content:p.content}));
 const instruction="過去投稿との重複防止が最優先です。末尾の過去投稿履歴を確認し、文章の言い換えだけでなく、主張・題材・例・冒頭のフックが似ている投稿も避けてください。毎週、新しい問題提起・視点・具体例を選んでください。次の"+slots.length+"枠それぞれに、X/Threads向けの日本語投稿文を1本ずつ作成してください。3つの企画を混同せず、昼は共感・実用・気づき、夜は物語・深い考察・自然な導線を中心に、曜日ごとに切り口を変えてください。カイはAI副業迷子向けに、14本あたり実用・共感8本、後輩くん制作物語の紹介4本、無料のSNS投稿管理アプリの開発状況と自然な案内2本を目安に構成する。実在する配布URLは入力されていないので架空のURLを絶対に作らず、未公開アプリを「配布中」と断定しない。後輩くんは初心者の成長を描くフィクション企画。2つ目の副業としてLINEスタンプを作る連載を進める。キャラクター統一、透過、切り抜き、連番保存、検品など実際に確認できた制作工程を物語に生かし、連載の時系列を守る。「カイが後輩くんのためにツールを作った」という設定を使う場合はフィクションと分かる表現にし、架空の売上や実績を現実の事実として断定しない。漫画・恋愛はアニメ・漫画の登場人物の言動から恋愛心理を分析し、作品の具体的な事実を捏造しない。売り込みは控えめに。Xの標準的な文字数上限を考慮し各投稿を原則140字以内で。返答は説明・コードフェンスなしの厳密なJSON配列だけにしてください。"+slots.length+"個すべてに account,platform,date,content を持たせ、account/platform/dateは以下の値を厳密に維持してください。投稿文は空欄にしない。スロット:"+JSON.stringify(slots);
-const fullInstruction=instruction+"\n過去の投稿履歴（直近最大150件。表現だけでなく題材の重複も避ける）:"+JSON.stringify(recentHistory);
+const fullInstruction=instruction+referencePrompt37(batchAccount)+"\n過去の投稿履歴（直近最大150件。表現だけでなく題材の重複も避ける）:"+JSON.stringify(recentHistory);
 document.getElementById("chatLaunch357").style.display="none";
 doCopy356(fullInstruction,"生成指示をコピーしてChatGPTに貼る",true)
 }
@@ -519,7 +603,7 @@ function exportBackup(){
  let url=null;
  try{
   // Keep the legacy schema compatible with existing restore functionality.
-  const payload={version:4,exportedAt:new Date().toISOString(),posts,history};
+  const payload={version:5,exportedAt:new Date().toISOString(),posts,history,references};
   const blob=new Blob([JSON.stringify(payload,null,2)],{type:"application/json"});
   url=URL.createObjectURL(blob);
   const a=document.createElement("a");
@@ -528,7 +612,7 @@ function exportBackup(){
   a.style.display="none";
   document.body.appendChild(a);
   try{a.click()}finally{a.remove()}
-  status.textContent="バックアップのダウンロードを開始しました。投稿"+posts.length+"件・履歴"+history.length+"件。必ずiPhoneの「ファイル」でJSONが保存されたか確認してください（画面表示だけでは保存成功は保証できません）。";
+  status.textContent="バックアップのダウンロードを開始しました。投稿"+posts.length+"件・履歴"+history.length+"件・参考投稿"+references.length+"件。必ずiPhoneの「ファイル」でJSONが保存されたか確認してください（画面表示だけでは保存成功は保証できません）。";
  }catch(e){
   status.textContent="ダウンロードを開始できませんでした。ブラウザの設定・ダウンロード先を確認してください。詳細："+String(e?.message||e);
  }finally{
@@ -538,27 +622,47 @@ function exportBackup(){
 }
 function refreshBackupStatus(){
  const label=document.getElementById("backupHistoryCount");
- if(label)label.textContent="保存されている重複防止履歴："+history.length+"件 ／ 投稿予定："+posts.length+"件";
+ if(label)label.textContent="保存されている重複防止履歴："+history.length+"件 ／ 投稿予定："+posts.length+"件 ／ 参考投稿："+references.length+"件";
 }
 async function restoreBackup(e){
  const file=e.target.files[0];
  if(!file)return;
  const status=document.getElementById("backupStatus");
- status.textContent="";
+ status.textContent="ファイルを読み込み中："+file.name;
  try{
   if(file.size>25*1024*1024)throw Error("25MBを超えるJSONは分割して取り込んでください");
-  const data=JSON.parse(await file.text());
+  let data;
+  try{data=JSON.parse(await file.text())}
+  catch(e){throw Error("JSON形式ではないファイルです。バックアップJSONを選び直してください。")}
+  if(data&&typeof data==="object"&&!Array.isArray(data)&&Array.isArray(data.references)&&!Array.isArray(data.posts)){
+   throw Error("これは参考投稿専用バックアップです。「参考投稿ライブラリ」にある『バックアップファイルを選択』から復元してください。");
+  }
   const arr=Array.isArray(data)?data:data?.posts;
   if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("投稿データの形式が違います");
   const extra=Array.isArray(data.history)?data.history:[];
   if(!extra.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"))throw Error("履歴の形式が違います");
+  if(data.references!==undefined&&!Array.isArray(data.references))throw Error("参考投稿の形式が違います");
+  const importedRefs=Array.isArray(data.references)?data.references:[];
+  if(importedRefs.length>500)throw Error("1回の復元で読み込める参考投稿は最大500件です。");
+  const cleaned=importedRefs.map(r=>normalizeReference37(r,true));
+  const knownRefIds=new Set(references.map(r=>String(r.id)));
+  const stagedRefs=references.slice();
+  for(const r of cleaned){
+   if(knownRefIds.has(String(r.id))||referenceDuplicate37(r,null,stagedRefs))continue;
+   if(stagedRefs.length>=500)throw Error("参考投稿が500件を超えるため復元できません。");
+   stagedRefs.push(r);knownRefIds.add(String(r.id));
+  }
   const knownIds=new Set(posts.map(p=>String(p.id)));
   const newPostCount=arr.filter(p=>!knownIds.has(String(p.id))).length;
   const knownHistory=new Set(history.map(historyIdentity));
   const newHistoryCount=extra.filter(p=>!knownHistory.has(historyIdentity(p))).length;
-  const label="ファイル："+file.name+"\n内容：投稿"+arr.length+"件・履歴"+extra.length+"件\n現在の画面に追加される見込み：投稿"+newPostCount+"件・履歴"+newHistoryCount+"件。\n\n復元しますか？";
+  const newReferenceCount=stagedRefs.length-references.length;
+  const label="ファイル："+file.name+
+   "\n内容：投稿"+arr.length+"件・履歴"+extra.length+"件・参考投稿"+importedRefs.length+"件"+
+   "\n現在の画面に追加される見込み：投稿"+newPostCount+"件・履歴"+newHistoryCount+"件・参考投稿"+newReferenceCount+"件。"+
+   "\n\n復元しますか？（過去のVer.3.6以前のバックアップも読み込めます）";
   if(!await uiConfirm35(label)){status.textContent="復元をキャンセルしました。既存データに変更はありません。";return}
-  const oldPosts=posts,oldHistory=history.slice(),ids=new Set(posts.map(p=>String(p.id)));
+  const oldPosts=posts,oldHistory=history.slice(),oldReferences=references.slice(),ids=new Set(posts.map(p=>String(p.id)));
   posts=posts.slice();
   for(const p of arr){
    if(ids.has(String(p.id)))continue;
@@ -566,16 +670,27 @@ async function restoreBackup(e){
    posts.push({...p,id});ids.add(String(id));
   }
   addHistory(extra);
+  references=stagedRefs;
   const addedPosts=posts.length-oldPosts.length,addedHistory=history.length-oldHistory.length;
+  const addedRefs=references.length-oldReferences.length;
   if(!persist()){
-   posts=oldPosts;history=oldHistory;
+   posts=oldPosts;history=oldHistory;references=oldReferences;
    status.textContent="復元できませんでした。データの保存に失敗しました。";
    refreshBackupStatus();return;
   }
   render();
+  renderReferenceLibrary37();
   refreshBackupStatus();
-  status.textContent="復元完了：投稿予定 "+addedPosts+"件、過去投稿履歴 "+addedHistory+"件を追加しました。履歴合計 "+history.length+"件。";
- }catch(err){status.textContent="復元できません："+err.message;uiInfo35(status.textContent)}
+  const additions=addedPosts+addedHistory+addedRefs;
+  status.textContent=additions
+   ?"✓ 復元成功：投稿予定 "+addedPosts+"件・過去履歴 "+addedHistory+"件・参考投稿 "+addedRefs+"件を追加しました。"
+   :"✓ ファイル確認完了：追加0件。すべて登録済み、またはこのファイルに新しいデータがありません。故障ではありません。";
+  if(typeof showReferenceNotice371==="function")showReferenceNotice371(additions?"✓ バックアップから復元しました":"✓ 追加0件：すべて登録済みです");
+ }catch(err){
+  status.textContent="復元できません："+String(err?.message||err);
+  uiInfo35(status.textContent);
+  if(typeof showReferenceNotice371==="function")showReferenceNotice371("復元できません。バックアップ欄の理由を確認してください");
+ }
  finally{e.target.value=""}
 }
 function v33LocalToday(){
@@ -749,6 +864,7 @@ document.addEventListener("visibilitychange",()=>{if(!document.hidden)checkNotif
 checkNotifications();
 </script>
 <script src="import34.js?v=36"></script>
-<script src="history342.js?v=36"></script>
+<script src="history342.js?v=37"></script>
+<script src="references37.js?v=371"></script>
 </body>
 </html>

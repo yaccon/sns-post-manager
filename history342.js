@@ -150,15 +150,17 @@ function refreshStorageUsage342(){
  try{
    const scheduled=localStorage.getItem(key)||"[]";
    const archived=localStorage.getItem(historyKey)||"[]";
+   const savedReferences=typeof referenceKey==="string"?(localStorage.getItem(referenceKey)||"[]"):"[]";
    const postsBytes=utf8Bytes342(scheduled);
    const historyBytes=utf8Bytes342(archived);
-   const total=postsBytes+historyBytes;
-   let text="投稿予定："+formatBytes342(postsBytes)+" ／ 過去履歴："+formatBytes342(historyBytes)+" ／ 合計："+formatBytes342(total);
+   const referenceBytes=utf8Bytes342(savedReferences);
+   const total=postsBytes+historyBytes+referenceBytes;
+   let text="投稿予定："+formatBytes342(postsBytes)+" ／ 過去履歴："+formatBytes342(historyBytes)+" ／ 参考投稿："+formatBytes342(referenceBytes)+" ／ 合計："+formatBytes342(total);
    const accounts=["カイ","後輩くん","漫画・恋愛"];
    const grouped=accounts.map(a=>a+" "+history.filter(h=>h?.account===a).length+"件").join("・");
    text+="\n履歴の内訳："+grouped;
    if(total>3.5*1024*1024)text+="\n容量が増えています。先にバックアップを保存してください。";
-   else text+="\n※このアプリの2つの保存領域の概算です。iPhone全体の使用量や空き容量ではありません。";
+   else text+="\n※このアプリの3つの保存領域の概算です。iPhone全体の使用量や空き容量ではありません。";
    view.textContent=text;
  }catch(e){view.textContent="保存容量を測定できません。"}
 }
