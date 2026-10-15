@@ -116,7 +116,7 @@ function xWeightedLength38(value){
   let sum=0;
   for(const segment of chunks){
    const cp=segment.codePointAt(0);
-   if(cp<=0x1b3||(cp>=0x2000&&cp<=0x200f)||(cp>=0x2010&&cp<=0x2017)||(cp>=0x2018&&cp<=0x201f)||(cp>=0x2020&&cp<=0x2027)||(cp>=0x2030&&cp<=0x203e))sum+=1;
+   if(cp<=4351||(cp>=8192&&cp<=8205)||(cp>=8208&&cp<=8223)||(cp>=8242&&cp<=8247))sum+=1;
    else sum+=2;
   }
   return sum;
@@ -252,3 +252,4 @@ function formatPostDisplay38(post){
  return body;
 }
 formatInit38();
+render();
