@@ -49,14 +49,14 @@ function setup(initialPosts=[],initialHistory=[],initialRefs=[]){
   navigator:{clipboard:{writeText:async()=>{}}},
   Date,Intl,URL:MockURL,Blob,console,setInterval(){},setTimeout:()=>42,clearTimeout(){}
  });
+ get('destination').value='X';get('xFormat38').value='single';get('xBudget38').value='240';get('xParts38').value='3';
+ vm.runInContext(xScript,c,{filename:'xformat38.js'});
  vm.runInContext(inline,c,{filename:'index.inline.js'});
  vm.runInContext(historyJs,c,{filename:'history342.js'});
  vm.runInContext(importerJs,c,{filename:'import34.js'});
  get('refFilter37').value='すべて';
  get('weekstart').value='2026-10-26';get('destination').value='X';get('generationBatch').value='kai';
  vm.runInContext(library,c,{filename:'references37.js'});
- get('xFormat38').value='single';get('xBudget38').value='240';get('xParts38').value='3';
- vm.runInContext(xScript,c,{filename:'xformat38.js'});
  const run=code=>vm.runInContext(code,c,{timeout:5000});
  return {c,get,run,storage,downloads,copyCalls,
   posts:()=>JSON.parse(storage.get('sns-post-manager-v1')||'[]'),
