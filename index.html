@@ -628,10 +628,15 @@ async function restoreBackup(e){
  const file=e.target.files[0];
  if(!file)return;
  const status=document.getElementById("backupStatus");
- status.textContent="";
+ status.textContent="ファイルを読み込み中："+file.name;
  try{
   if(file.size>25*1024*1024)throw Error("25MBを超えるJSONは分割して取り込んでください");
-  const data=JSON.parse(await file.text());
+  let data;
+  try{data=JSON.parse(await file.text())}
+  catch(e){throw Error("JSON形式ではないファイルです。バックアップJSONを選び直してください。")}
+  if(data&&typeof data==="object"&&!Array.isArray(data)&&Array.isArray(data.references)&&!Array.isArray(data.posts)){
+   throw Error("これは参考投稿専用バックアップです。「参考投稿ライブラリ」にある『バックアップファイルを選択』から復元してください。");
+  }
   const arr=Array.isArray(data)?data:data?.posts;
   if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("投稿データの形式が違います");
   const extra=Array.isArray(data.history)?data.history:[];
@@ -676,8 +681,16 @@ async function restoreBackup(e){
   render();
   renderReferenceLibrary37();
   refreshBackupStatus();
-  status.textContent="復元完了：投稿予定 "+addedPosts+"件、過去投稿履歴 "+addedHistory+"件、参考投稿 "+addedRefs+"件を追加しました。";
- }catch(err){status.textContent="復元できません："+err.message;uiInfo35(status.textContent)}
+  const additions=addedPosts+addedHistory+addedRefs;
+  status.textContent=additions
+   ?"✓ 復元成功：投稿予定 "+addedPosts+"件・過去履歴 "+addedHistory+"件・参考投稿 "+addedRefs+"件を追加しました。"
+   :"✓ ファイル確認完了：追加0件。すべて登録済み、またはこのファイルに新しいデータがありません。故障ではありません。";
+  if(typeof showReferenceNotice371==="function")showReferenceNotice371(additions?"✓ バックアップから復元しました":"✓ 追加0件：すべて登録済みです");
+ }catch(err){
+  status.textContent="復元できません："+String(err?.message||err);
+  uiInfo35(status.textContent);
+  if(typeof showReferenceNotice371==="function")showReferenceNotice371("復元できません。バックアップ欄の理由を確認してください");
+ }
  finally{e.target.value=""}
 }
 function v33LocalToday(){
