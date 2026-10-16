@@ -1,0 +1,19 @@
+name: iPhone バックアップ・復元 QA
+on:
+  pull_request:
+    paths:
+      - 'qa-iphone-backup-v358.html'
+      - 'scripts/tests/iphone-backup-v358.test.mjs'
+      - '.github/workflows/iphone-backup-v358.yml'
+permissions:
+  contents: read
+jobs:
+  backup-restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test scripts/tests/iphone-backup-v358.test.mjs
