@@ -150,6 +150,21 @@ test("Gemini incomplete or malformed response fails closed and never saves",asyn
   });
  }
 });
+test("Paid, unknown, or future model config is refused before reaching Gemini",async()=>{
+ const calls=[];
+ await withFakeFetch(async(url,opts)=>{
+  calls.push(String(url));
+  if(String(url).includes("siteverify"))return new Response(JSON.stringify({success:true,hostname:"yaccon.github.io"}));
+  throw Error("Must never use a non-free API model");
+ },async()=>{
+  for(const id of ["gemini-3.8-pro","gemini-3.5-flash","gemini-3.6-flash"]){
+   const r=await worker.fetch(req(params),env({GEMINI_MODEL:id}));
+   assert.equal(r.status,503);
+   assert.match((await r.json()).error,/無料AIモデル以外/);
+  }
+ });
+ assert.equal(calls.filter(x=>x.includes("generativelanguage.googleapis.com")).length,0);
+});
 test("CORS preflight responds only to allowed origin",async()=>{
  const request=new Request("https://example.workers.dev/generate",{method:"OPTIONS",headers:{Origin:ORIGIN}});
  const response=await worker.fetch(request,{});
