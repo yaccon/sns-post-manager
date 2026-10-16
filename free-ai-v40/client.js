@@ -2,6 +2,26 @@
  * Only the Cloudflare Worker endpoint and public Turnstile sitekey are configured.
  * Users never interact with JSON, and no AI output is saved before existing review.
  */
+const freeAi40PublicConfigKey="sns-post-manager-free-ai-v40-qa-public-config";
+function freeAi40LoadPublicConfig(){
+ // Only a public Worker URL and public Turnstile sitekey, never credentials.
+ try{
+  const obj=JSON.parse(localStorage.getItem(freeAi40PublicConfigKey)||"{}");
+  if(typeof obj.endpoint==="string"&&obj.endpoint.length<=250){
+   const el=document.getElementById("freeAi40Endpoint");if(el)el.value=obj.endpoint;
+  }
+  if(typeof obj.sitekey==="string"&&obj.sitekey.length<=180){
+   const el=document.getElementById("freeAi40Sitekey");if(el)el.value=obj.sitekey;
+  }
+ }catch{}
+}
+function freeAi40ClearPublicConfig(){
+ try{localStorage.removeItem(freeAi40PublicConfigKey)}catch{}
+ for(const id of ["freeAi40Endpoint","freeAi40Sitekey"]){const el=document.getElementById(id);if(el)el.value="";}
+ if(window.turnstile&&freeAi40ChallengeId!==null){try{window.turnstile.remove(freeAi40ChallengeId)}catch{}}
+ freeAi40ChallengeId=null;freeAi40ChallengeToken="";
+ freeAi40Status("公開接続情報を消去しました。秘密キーはアプリに保存していません。");
+}
 let freeAi40ChallengeToken="";
 let freeAi40ChallengeId=null;
 let freeAi40Busy=false;
@@ -31,6 +51,8 @@ function freeAi40Connect(){
   return;
  }
  try{
+  // Persist only information that is publicly visible on the website.
+  try{localStorage.setItem(freeAi40PublicConfigKey,JSON.stringify({endpoint:url.href,sitekey}))}catch{}
   if(freeAi40ChallengeId!==null)window.turnstile.remove(freeAi40ChallengeId);
   freeAi40ChallengeId=window.turnstile.render("#freeAi40Challenge",{
    sitekey,
@@ -105,3 +127,5 @@ async function freeAi40Generate(){
   }
  }
 }
+
+freeAi40LoadPublicConfig();
