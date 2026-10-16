@@ -101,7 +101,7 @@ async function loadBackup(a,content,accept=true){
 
 test('production candidate parses, retains original storage keys, and has no QA-only features',()=>{
  for(const chunk of [js,hist,files])assert.doesNotThrow(()=>new vm.Script(chunk));
- assert.match(html,/<title>SNS投稿管理 Ver\.3\.(?:6|7|8)(?:\.1)?<\/title>/);
+ assert.match(html,/<title>SNS投稿管理 Ver\.3\.(?:6|7|8|9)(?:\.1)?<\/title>/);
  assert.match(html,/const key="sns-post-manager-v1"/);
  assert.match(html,/const historyKey="sns-post-manager-history-v1"/);
  assert.match(html,/id="generationBatch"/);
