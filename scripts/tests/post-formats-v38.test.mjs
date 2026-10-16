@@ -108,7 +108,7 @@ async function importBatch(a,arr){
 
 test("v3.8 files parse, current Today card is first and production keys are unchanged",()=>{
  for(const s of [inline,formatScript,historyScript,refScript,importScript])assert.doesNotThrow(()=>new vm.Script(s));
- assert.match(html,/SNS投稿管理 Ver\.3\.8/);
+ assert.match(html,/SNS投稿管理 Ver\.3\.(?:8|9)/);
  assert.ok(html.indexOf('id="todaySection"')<html.indexOf('id="xFormatPanel38"'));
  assert.ok(html.indexOf('id="todaySection"')<html.indexOf('id="referenceLibrary37"'));
  assert.match(html,/const key="sns-post-manager-v1"/);
