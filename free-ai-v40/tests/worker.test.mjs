@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import worker,{makeSlots,validateSettings,buildPrompt,validateGenerated,DEFAULT_MODEL,ORIGIN} from "../../free-ai-v40/worker.mjs";
+import worker,{makeSlots,validateSettings,buildPrompt,buildResponseSchema,validateGenerated,DEFAULT_MODEL,ORIGIN} from "../../free-ai-v40/worker.mjs";
 
 const params={account:"カイ",platform:"X",startDate:"2026-10-19",xFormat:"single",xTarget:"120",premiumTarget:"800",threadsTarget:"200",threadCount:3,confirmAdult:true,consentToFreeTierProcessing:true,challengeToken:"test-token-human-verification"};
 function req(payload=params,{origin=ORIGIN,country="JP",ip="203.0.113.21",path="/generate",method="POST"}={}){
@@ -120,6 +120,8 @@ test("Successful Gemini 14-post JSON remains unregistered until frontend reviews
  assert.equal(calls[1].opts.headers["x-goog-api-key"],"secret-never-leak");
  const body=JSON.parse(calls[1].opts.body);
  assert.equal(body.generationConfig.responseMimeType,"application/json");
+ assert.equal(body.generationConfig.responseJsonSchema.minItems,14);
+ assert.equal(body.generationConfig.responseJsonSchema.maxItems,14);
  assert.equal(body.contents[0].parts[0].text.includes("スロット"),false);
  assert.equal(body.contents[0].parts[0].text.includes("厳密な予定枠"),true);
 });
@@ -170,4 +172,27 @@ test("CORS preflight responds only to allowed origin",async()=>{
  const response=await worker.fetch(request,{});
  assert.equal(response.status,204);
  assert.equal(response.headers.get("access-control-allow-methods"),"POST, OPTIONS");
+});
+
+test("Strict JSON response schema matches free X thread and Threads formats",()=>{
+ const thread=validateSettings({...params,xFormat:"thread",threadCount:4});
+ const structure=buildResponseSchema(thread);
+ assert.equal(structure.type,"array");
+ assert.equal(structure.minItems,14);
+ assert.equal(structure.maxItems,14);
+ assert.deepEqual(structure.items.properties.account.enum,["カイ"]);
+ assert.equal(structure.items.properties.threadParts.minItems,4);
+ assert.ok(structure.items.required.includes("threadParts"));
+ const threads=buildResponseSchema(validateSettings({...params,platform:"Threads"}));
+ assert.equal(threads.items.properties.threadParts,undefined);
+ assert.deepEqual(threads.items.properties.platform.enum,["Threads"]);
+});
+test("14 results can be returned in arbitrary order but exact duplicate/missing dates still fail",()=>{
+ const cfg=validateSettings(params),arr=batch(cfg);
+ assert.equal(validateGenerated([...arr].reverse(),cfg).length,14);
+ assert.equal(validateGenerated([...arr].reverse(),cfg)[0].date,arr[0].date);
+ const duplicate=[...arr];duplicate[3]={...duplicate[3],date:duplicate[2].date};
+ assert.equal(validateGenerated(duplicate,cfg),null);
+ const unknown=[...arr];unknown[3]={...unknown[3],date:"2027-01-01T12:00"};
+ assert.equal(validateGenerated(unknown,cfg),null);
 });
