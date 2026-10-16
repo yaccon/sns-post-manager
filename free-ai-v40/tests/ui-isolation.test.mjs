@@ -6,6 +6,7 @@ import vm from "node:vm";
 const prod=fs.readFileSync("index.html","utf8");
 const qa=fs.readFileSync("qa-free-ai-v40.html","utf8");
 const client=fs.readFileSync("free-ai-v40/client.js","utf8");
+const setup=fs.readFileSync("free-ai-v40-setup.html","utf8");
 const formatter=fs.readFileSync("free-ai-v40/postformat40-qa.js","utf8");
 const backend=fs.readFileSync("free-ai-v40/worker.mjs","utf8");
 const config=JSON.parse(fs.readFileSync("free-ai-v40/wrangler.json","utf8"));
@@ -73,4 +74,25 @@ test("iPhone deployment workflow requires explicit manual consent and all four p
  assert.equal(bootstrap.main,"bootstrap-disabled.mjs");
  assert.equal(bootstrap.name,JSON.parse(fs.readFileSync("free-ai-v40/wrangler.json","utf8")).name);
  assert.doesNotMatch(disabled,/GEMINI_API_KEY|x-goog-api-key|generativelanguage\.googleapis/);
+});
+
+test("Operator setup is iPhone readable and never requests storing API secrets in the web app",()=>{
+ assert.match(setup,/<meta name="viewport"/);
+ assert.match(setup,/Google AI Studio/);
+ assert.match(setup,/Cloudflare/);
+ assert.match(setup,/Turnstile/);
+ assert.match(setup,/18歳|無料/);
+ assert.match(setup,/free-ai-v40\/wrangler\.json/);
+ assert.match(setup,/sns-post-manager-free-ai-v40-onboarding-checks/);
+ assert.match(setup,/qa-free-ai-v40\.html\?v=401/);
+ assert.doesNotMatch(setup,/<input[^>]+(?:GEMINI_API_KEY|TURNSTILE_SECRET)/);
+ assert.doesNotMatch(setup,/localStorage\.setItem\([^,]+,\s*(?:apiKey|secret)/);
+});
+test("iPhone QA remembers public endpoint and sitekey only, and can forget them",()=>{
+ assert.match(client,/freeAi40PublicConfigKey="sns-post-manager-free-ai-v40-qa-public-config"/);
+ assert.match(client,/freeAi40LoadPublicConfig/);
+ assert.match(client,/freeAi40ClearPublicConfig/);
+ assert.match(qa,/onclick="freeAi40ClearPublicConfig\(\)"/);
+ assert.match(qa,/free-ai-v40-setup\.html/);
+ assert.doesNotMatch(client,/localStorage\.setItem\([^,]+,\s*(?:env|apiKey|secretKey)/);
 });
