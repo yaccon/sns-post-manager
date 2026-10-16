@@ -84,9 +84,16 @@ function xWeightedLength(text){
 export function validateGenerated(raw,settings){
  if(!Array.isArray(raw)||raw.length!==14)return null;
  const slots=makeSlots(settings);
+ // Models occasionally reorder JSON items. Match by the exact expected slot
+ // rather than rejecting safe results simply because order changed.
+ const bySlot=new Map();
+ for(const post of raw){
+  if(!post||typeof post!=="object"||Array.isArray(post)||typeof post.date!=="string"||bySlot.has(post.date))return null;
+  bySlot.set(post.date,post);
+ }
  const result=[];
  for(let i=0;i<slots.length;i++){
-  const p=raw[i],e=slots[i];
+  const e=slots[i],p=bySlot.get(e.date);
   if(!p||p.account!==e.account||p.platform!==e.platform||p.date!==e.date||typeof p.content!=="string"||!p.content.trim())return null;
   const content=p.content.trim();
   if(settings.platform==="Threads"){
@@ -104,6 +111,26 @@ export function validateGenerated(raw,settings){
   result.push({...e,content,...(settings.mode==="premium"?{postFormat:"premium"}:{})});
  }
  return result;
+}
+export function buildResponseSchema(settings){
+ // Keep a small JSON Schema: this directs the model to return a reliably
+ // parseable array, but runtime validation below remains authoritative.
+ const properties={
+  account:{type:"string",enum:[settings.account]},
+  platform:{type:"string",enum:[settings.platform]},
+  date:{type:"string"},
+  content:{type:"string"}
+ };
+ const required=["account","platform","date","content"];
+ if(settings.mode==="thread"&&settings.platform==="X"){
+  properties.postFormat={type:"string",enum:["thread"]};
+  properties.threadParts={type:"array",minItems:settings.threadCount,maxItems:settings.threadCount,items:{type:"string"}};
+  required.push("postFormat","threadParts");
+ }else if(settings.mode==="premium"&&settings.platform==="X"){
+  properties.postFormat={type:"string",enum:["premium"]};
+  required.push("postFormat");
+ }
+ return {type:"array",minItems:14,maxItems:14,items:{type:"object",properties,required}};
 }
 async function verifyTurnstile(token,secret,ip,networkFetch){
  if(typeof token!=="string"||token.length<10||token.length>2048)return false;
@@ -158,7 +185,7 @@ export default {
     headers:{"content-type":"application/json","x-goog-api-key":env.GEMINI_API_KEY},
     body:JSON.stringify({
      contents:[{role:"user",parts:[{text:prompt}]}],
-     generationConfig:{responseMimeType:"application/json",temperature:0.75,maxOutputTokens:16000}
+     generationConfig:{responseMimeType:"application/json",responseJsonSchema:buildResponseSchema(validated),temperature:0.75,maxOutputTokens:16000}
     }),
     signal:AbortSignal.timeout(55000)
    });
