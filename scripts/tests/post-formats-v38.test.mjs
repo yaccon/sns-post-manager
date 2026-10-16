@@ -9,6 +9,7 @@ const formatScript=fs.readFileSync("postformat38.js","utf8");
 const historyScript=fs.readFileSync("history342.js","utf8");
 const importScript=fs.readFileSync("import34.js","utf8");
 const refScript=fs.readFileSync("references37.js","utf8");
+const jsonlessScript=fs.readFileSync("jsonless39.js","utf8");
 assert.ok(inline,"index.html inline script must exist");
 
 class MockEl {
@@ -68,6 +69,7 @@ function boot(storage=new Map(),options={}){
  vm.runInContext(importScript,ctx,{filename:"import34.js"});
  get("refFilter37").value="すべて";
  vm.runInContext(refScript,ctx,{filename:"references37.js"});
+ vm.runInContext(jsonlessScript,ctx,{filename:"jsonless39.js"});
  get("destination").value="X";get("generationBatch").value="kai";get("platform").value="X";
  get("weekstart").value="2026-10-26";
  const run=expression=>vm.runInContext(expression,ctx,{timeout:10000});
@@ -397,4 +399,93 @@ test("Threads selection is retained in full JSON backup and restored with X sett
  await b.confirm(true);await pending;
  assert.equal(b.prefs().threadsTarget,"300");
  assert.equal(b.prefs().xFormat,"premium");
+});
+
+
+test("Ver3.9 JSON-free controls are below first Today card and old storage keys persist",()=>{
+ assert.doesNotThrow(()=>new vm.Script(jsonlessScript));
+ assert.ok(html.indexOf('id="todaySection"')<html.indexOf('id="clipboardReview39"'));
+ assert.match(html,/id="importManual39"/);
+ assert.match(html,/id="clipboardReview39"/);
+ assert.match(html,/jsonless39\.js\?v=39/);
+ assert.match(html,/const key="sns-post-manager-v1"/);
+ assert.match(html,/const historyKey="sns-post-manager-history-v1"/);
+ assert.match(html,/const referenceKey="sns-post-manager-references-v1"/);
+ assert.doesNotMatch(jsonlessScript,/localStorage\.setItem|fetch\(|api\.openai\.com|eval\(/);
+});
+
+test("iPhone clipboard button reads 14 posts and stages safe preview without auto-registration",async()=>{
+ const a=boot();
+ a.ctx.navigator.clipboard.readText=async()=>JSON.stringify(slots().map((x,i)=>({...x,content:"見本"+i+"　"+String.fromCodePoint(0x4e00+11*i).repeat(58)})));
+ const previousPosts=a.storage.get("sns-post-manager-v1");
+ await a.run("readClipboardAndReview39()");
+ assert.match(a.get("clipboardStatus39").textContent,/コピー内容を確認しました/);
+ assert.match(a.get("clipboardStatus39").textContent,/候補14本/);
+ assert.equal(a.get("importManual39").open,false);
+ assert.equal(a.posts().length,0,"preview does not register posts");
+ assert.equal(a.storage.get("sns-post-manager-v1"),previousPosts,"preview does not alter old data bytes");
+ assert.ok(a.get("importReview").children.length>0);
+ const pending=a.run("finishImport()");
+ await a.confirm(true);await pending;
+ assert.equal(a.posts().length,14,"explicit approval registers posts");
+});
+test("Ver3.9 respects the saved X thread layout and imports only after review",async()=>{
+ const a=boot();
+ apply(a,{xFormat38:"thread",threadCount38:"3"});
+ a.ctx.navigator.clipboard.readText=async()=>JSON.stringify(threadBatch(3));
+ await a.run("readClipboardAndReview39()");
+ assert.equal(a.posts().length,0);
+ assert.match(a.get("clipboardStatus39").textContent,/候補14本/);
+ const task=a.run("finishImport()");
+ await a.confirm(true);await task;
+ assert.equal(a.posts().length,14);
+ assert.equal(a.posts()[0].threadParts.length,3);
+});
+test("Invalid copied text exposes readable fallback and preserves existing posts",async()=>{
+ const keep={id:"keep1",account:"カイ",platform:"X",date:"2026-10-26T12:00",content:"既存の投稿を変更しない",done:true};
+ const a=boot(new Map([["sns-post-manager-v1",JSON.stringify([keep])]]));
+ const before=a.storage.get("sns-post-manager-v1");
+ a.ctx.navigator.clipboard.readText=async()=>"{Invalid JSON";
+ await a.run("readClipboardAndReview39()");
+ assert.equal(a.get("importManual39").open,true);
+ assert.match(a.get("importStatus").textContent,/JSON形式/);
+ assert.equal(a.storage.get("sns-post-manager-v1"),before);
+ assert.equal(a.run("pendingImport"),null);
+});
+test("Permission denial opens manual paste, without clearing any existing pasted draft",async()=>{
+ const a=boot();
+ a.get("jsonImport").value="作業途中の文章";
+ a.ctx.navigator.clipboard.readText=async()=>{throw new Error("NotAllowedError")};
+ await a.run("readClipboardAndReview39()");
+ assert.equal(a.get("importManual39").open,true);
+ assert.equal(a.get("jsonImport").value,"作業途中の文章");
+ assert.match(a.get("clipboardStatus39").textContent,/長押しして「ペースト」/);
+ assert.equal(a.get("clipboardReview39").disabled,false);
+ assert.equal(a.posts().length,0);
+});
+test("Very large clipboard contents are declined and blank clipboard is explained",async()=>{
+ const a=boot();
+ a.ctx.navigator.clipboard.readText=async()=>("あ".repeat(250001));
+ await a.run("readClipboardAndReview39()");
+ assert.match(a.get("clipboardStatus39").textContent,/大きすぎます/);
+ assert.equal(a.get("jsonImport").value,"");
+ a.ctx.navigator.clipboard.readText=async()=>"";
+ await a.run("readClipboardAndReview39()");
+ assert.match(a.get("clipboardStatus39").textContent,/見つかりません/);
+ assert.equal(a.posts().length,0);
+});
+test("Ver3.9 QA page isolates all existing data and persistent format keys",()=>{
+ const qa=fs.readFileSync("qa-jsonless-v39.html","utf8");
+ const qaFmt=fs.readFileSync("postformat39-qa.js","utf8");
+ assert.match(qa,/SNS投稿管理 Ver\.3\.9 テスト版/);
+ assert.ok(qa.indexOf('id="todaySection"')<qa.indexOf('id="clipboardReview39"'));
+ assert.match(qa,/const key="sns-post-manager-qa-jsonless-v39"/);
+ assert.match(qa,/const historyKey="sns-post-manager-history-qa-jsonless-v39"/);
+ assert.match(qa,/const referenceKey="sns-post-manager-references-qa-jsonless-v39"/);
+ assert.match(qaFmt,/sns-post-manager-format-settings-qa-jsonless-v39/);
+ assert.match(qa,/src="postformat39-qa\.js\?v=39"/);
+ assert.match(qa,/jsonless39\.js\?v=39/);
+ assert.match(qa,/function qaLoadJson39\(/);
+ assert.doesNotMatch(qa,/const key="sns-post-manager-v1"/);
+ assert.equal(qaFmt.replace("sns-post-manager-format-settings-qa-jsonless-v39","sns-post-manager-format-settings-v1"),formatScript);
 });
