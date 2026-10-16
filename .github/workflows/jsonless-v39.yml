@@ -1,0 +1,28 @@
+name: Ver3.9 ワンタップ取込・旧データ安全性
+on:
+  pull_request:
+    paths:
+      - 'index.html'
+      - 'jsonless39.js'
+      - 'qa-jsonless-v39.html'
+      - 'postformat39-qa.js'
+      - 'scripts/tests/post-formats-v38.test.mjs'
+      - 'scripts/tests/release-v36-integration.test.mjs'
+      - 'scripts/tests/reference-library-v37.test.mjs'
+      - '.github/workflows/jsonless-v39.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test-clipboard-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check scripts
+        run: node --check jsonless39.js && node --check postformat38.js && node --check postformat39-qa.js
+      - name: Verify Ver3.9 and old data regression
+        run: node --test scripts/tests/post-formats-v38.test.mjs scripts/tests/reference-library-v37.test.mjs scripts/tests/release-v36-integration.test.mjs
