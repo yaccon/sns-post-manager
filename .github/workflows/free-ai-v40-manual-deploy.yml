@@ -1,0 +1,51 @@
+name: 手動公開・無料AI接続ベータ（Cloudflare）
+on:
+  workflow_dispatch:
+    inputs:
+      approval:
+        description: '公開操作を実行する場合だけ DEPLOY_FREE_BETA を入力'
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  safe-deploy:
+    if: ${{ inputs.approval == 'DEPLOY_FREE_BETA' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      TURNSTILE_SECRET: ${{ secrets.TURNSTILE_SECRET }}
+    defaults:
+      run:
+        working-directory: free-ai-v40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail closed if even one secret is not configured
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'GitHub Secret CLOUDFLARE_API_TOKEN is missing'; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'GitHub Secret CLOUDFLARE_ACCOUNT_ID is missing'; exit 1; }
+          test -n "$GEMINI_API_KEY" || { echo 'GitHub Secret GEMINI_API_KEY is missing'; exit 1; }
+          test -n "$TURNSTILE_SECRET" || { echo 'GitHub Secret TURNSTILE_SECRET is missing'; exit 1; }
+      - name: Run no-cost AI / privacy tests before deployment
+        working-directory: .
+        run: node --test free-ai-v40/tests/worker.test.mjs free-ai-v40/tests/ui-isolation.test.mjs
+      - name: Validate Wrangler configs and worker build locally
+        run: |
+          npx --yes wrangler@4 deploy --config wrangler.bootstrap.json --dry-run
+          npx --yes wrangler@4 deploy --config wrangler.json --dry-run
+      - name: Bootstrap closed Worker to allow first-time secret installation
+        run: npx --yes wrangler@4 deploy --config wrangler.bootstrap.json
+      - name: Securely install Gemini API key into Cloudflare Worker
+        run: printf '%s' "$GEMINI_API_KEY" | npx --yes wrangler@4 secret put GEMINI_API_KEY --config wrangler.bootstrap.json
+      - name: Securely install Turnstile secret into Cloudflare Worker
+        run: printf '%s' "$TURNSTILE_SECRET" | npx --yes wrangler@4 secret put TURNSTILE_SECRET --config wrangler.bootstrap.json
+      - name: Deploy protected Gemini Worker with both request limiters
+        run: npx --yes wrangler@4 deploy --config wrangler.json
+      - name: Deployment policy reminder
+        run: echo 'Review the public workers.dev URL in the previous deploy step. No Google billing must be enabled on the Gemini API key project.'
