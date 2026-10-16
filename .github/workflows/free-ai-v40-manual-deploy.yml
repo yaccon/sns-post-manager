@@ -33,7 +33,8 @@ jobs:
           test -n "$GEMINI_API_KEY" || { echo 'GitHub Secret GEMINI_API_KEY is missing'; exit 1; }
           test -n "$TURNSTILE_SECRET" || { echo 'GitHub Secret TURNSTILE_SECRET is missing'; exit 1; }
       - name: Run no-cost AI / privacy tests before deployment
-        run: node --test tests/worker.test.mjs tests/ui-isolation.test.mjs
+        working-directory: .
+        run: node --test free-ai-v40/tests/worker.test.mjs free-ai-v40/tests/ui-isolation.test.mjs
       - name: Validate Wrangler configs and worker build locally
         run: |
           npx --yes wrangler@4 deploy --config wrangler.bootstrap.json --dry-run
