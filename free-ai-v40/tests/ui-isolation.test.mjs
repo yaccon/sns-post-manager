@@ -55,3 +55,22 @@ test("Free AI sends no user's old posts, history, or reference library upstream"
  assert.doesNotMatch(send,/\bhistory\b|\breferences\b|\bposts\b/);
  assert.match(qa,/Googleのサービス改善/);
 });
+
+test("iPhone deployment workflow requires explicit manual consent and all four private secrets",()=>{
+ const yml=fs.readFileSync(".github/workflows/free-ai-v40-manual-deploy.yml","utf8");
+ const disabled=fs.readFileSync("free-ai-v40/bootstrap-disabled.mjs","utf8");
+ const bootstrap=JSON.parse(fs.readFileSync("free-ai-v40/wrangler.bootstrap.json","utf8"));
+ assert.match(yml,/workflow_dispatch:/);
+ assert.doesNotMatch(yml,/\n  push:|\n  schedule:|\n  pull_request:/);
+ assert.match(yml,/inputs\.approval == 'DEPLOY_FREE_BETA'/);
+ for(const secret of ["CLOUDFLARE_API_TOKEN","CLOUDFLARE_ACCOUNT_ID","GEMINI_API_KEY","TURNSTILE_SECRET"]){
+  assert.match(yml,new RegExp("secrets\\."+secret));
+  assert.match(yml,new RegExp("test -n.*"+secret));
+ }
+ assert.match(yml,/wrangler@4 deploy --config wrangler\.bootstrap\.json/);
+ assert.match(yml,/wrangler@4 deploy --config wrangler\.json/);
+ assert.match(disabled,/status:503/);
+ assert.equal(bootstrap.main,"bootstrap-disabled.mjs");
+ assert.equal(bootstrap.name,JSON.parse(fs.readFileSync("free-ai-v40/wrangler.json","utf8")).name);
+ assert.doesNotMatch(disabled,/GEMINI_API_KEY|x-goog-api-key|generativelanguage\.googleapis/);
+});
