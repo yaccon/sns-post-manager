@@ -173,6 +173,7 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <section class="card" id="freeAi40Panel" style="background:#f0f7ff;border:2px solid #99badf">
 <h2>✨ 完全無料AI生成（接続テスト）</h2>
 <p class="help">ChatGPTでJSONをコピーせず、アプリ内でGeminiの無料AIから投稿14本を直接生成する構成です。現在は安全な中継Workerが未接続のため、<b>実際のAI生成はまだ使用できません</b>。テスト用の架空文章は生成しません。</p>
+<p class="help"><a href="free-ai-v40-setup.html" target="_blank" rel="noopener">📱 iPhoneで無料AIを接続する手順を見る</a></p>
 <p class="help">投稿開始日・アカウント（14本）・XまたはThreads・文字数は下の「1週間分の投稿を作る」で先に選んでください。無料AIでは現在1アカウント14本ずつ生成します。</p>
 <details>
 <summary style="padding:9px 0;font-weight:700">運営者用：公開AI接続設定（一般利用者の操作は不要）</summary>
@@ -181,6 +182,8 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <label for="freeAi40Sitekey">Turnstileの公開サイトキー（秘密キーではありません）</label>
 <input id="freeAi40Sitekey" type="text" autocomplete="off" placeholder="公開サイトキーを入力">
 <button class="secondary" type="button" onclick="freeAi40Connect()">公開Workerと接続</button>
+<button class="secondary" type="button" onclick="freeAi40ClearPublicConfig()">このテストの接続設定だけ消去</button>
+<p class="help">Worker URLとTurnstileの公開サイトキーだけをテスト版ブラウザ内に保存します。Gemini APIキーやTurnstile秘密キーを入力する欄はありません。</p>
 </details>
 <div id="freeAi40Challenge" style="margin-top:12px;min-height:8px"></div>
 <label style="font-size:13px;line-height:1.75;font-weight:normal;display:flex;gap:10px;align-items:start">
