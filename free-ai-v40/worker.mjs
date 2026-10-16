@@ -151,7 +151,8 @@ export default {
    if(!perUser.success||!global.success)return reject("無料枠を公平に使うため少し時間を空けてください。",429);
    const prompt=buildPrompt(validated);
    const model=env.GEMINI_MODEL||DEFAULT_MODEL;
-   if(!/^[a-z0-9.-]{4,60}$/.test(model))return reject("AIモデルの設定を確認してください。",503);
+   // Safety: allow only the verified free-tier model. Never permit a paid-model fallback.
+   if(model!==DEFAULT_MODEL)return reject("無料AIモデル以外は使用できません。設定を確認してください。",503);
    const provider=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{
     method:"POST",
     headers:{"content-type":"application/json","x-goog-api-key":env.GEMINI_API_KEY},
