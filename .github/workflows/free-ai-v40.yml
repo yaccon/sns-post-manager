@@ -4,6 +4,7 @@ on:
     paths:
       - 'free-ai-v40/**'
       - 'qa-free-ai-v40.html'
+      - 'free-ai-v40-setup.html'
       - '.github/workflows/free-ai-v40.yml'
   workflow_dispatch:
 permissions:
