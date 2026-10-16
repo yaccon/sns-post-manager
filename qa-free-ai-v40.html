@@ -170,28 +170,6 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 <strong>🧪 テスト版Ver.3.8</strong>
 <p class="help">普段のVer.3.7.1の投稿・履歴・参考投稿・投稿形式設定には触れません。すべて別の保存領域です。以下は架空のサンプル文章のみでお試しください。</p>
 </section>
-<section class="card" id="freeAi40Panel" style="background:#f0f7ff;border:2px solid #99badf">
-<h2>✨ 完全無料AI生成（接続テスト）</h2>
-<p class="help">ChatGPTでJSONをコピーせず、アプリ内でGeminiの無料AIから投稿14本を直接生成する構成です。現在は安全な中継Workerが未接続のため、<b>実際のAI生成はまだ使用できません</b>。テスト用の架空文章は生成しません。</p>
-<p class="help">投稿開始日・アカウント（14本）・XまたはThreads・文字数は下の「1週間分の投稿を作る」で先に選んでください。無料AIでは現在1アカウント14本ずつ生成します。</p>
-<details>
-<summary style="padding:9px 0;font-weight:700">運営者用：公開AI接続設定（一般利用者の操作は不要）</summary>
-<label for="freeAi40Endpoint">Cloudflare Workerの公開URL（/generateまで）</label>
-<input id="freeAi40Endpoint" type="url" inputmode="url" placeholder="https://your-worker.workers.dev/generate" autocomplete="off">
-<label for="freeAi40Sitekey">Turnstileの公開サイトキー（秘密キーではありません）</label>
-<input id="freeAi40Sitekey" type="text" autocomplete="off" placeholder="公開サイトキーを入力">
-<button class="secondary" type="button" onclick="freeAi40Connect()">公開Workerと接続</button>
-</details>
-<div id="freeAi40Challenge" style="margin-top:12px;min-height:8px"></div>
-<label style="font-size:13px;line-height:1.75;font-weight:normal;display:flex;gap:10px;align-items:start">
-<input type="checkbox" id="freeAi40Consent" style="width:23px;height:23px;flex:none;margin-top:4px">
-<span>私は18歳以上です。無料枠へ送る投稿条件と、AIが生成する回答がGoogleのサービス改善に利用される場合があることを理解しました。個人情報や機密情報は送信しません。</span>
-</label>
-<button class="primary" id="freeAi40GenerateButton" type="button" onclick="freeAi40Generate()">✨ 無料AIで14本を生成して確認</button>
-<p id="freeAi40Status" class="status" role="status" aria-live="polite">無料AIの接続は未設定です。安全確認と接続が完了するまで、実際のAI生成は行いません。</p>
-<p class="help">誤った文章や同じ題材の再利用を防ぐため、生成結果は従来の重複検査・確認画面へ送ります。確認ボタンを押さない限り保存しません。無料枠の上限に達した場合は課金せずに停止します。通常版Ver.3.8の投稿・履歴・設定へは一切書き込みません。</p>
-<p class="help"><a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Gemini APIの無料枠の利用条件を確認</a></p>
-</section>
 <section class="card">
 <h2>✨ AIで1週間分の投稿を作る</h2>
 <div class="pill">カイ・後輩くん・漫画恋愛 各14本 ／ 合計42本<br>毎日12:00・20:00 ／ API追加料金0円</div>
@@ -248,6 +226,31 @@ button{border:0;border-radius:9px;padding:12px;font-size:14px;font-weight:bold;c
 </div>
 <p id="formatStatus38" class="format-status38" aria-live="polite">前回の選択を読み込みます。</p>
 <p class="format-help38">X通常投稿は加重カウント280以内（日本語はおおむね140文字）。Threads通常投稿は500文字以内です。両SNSともリンクや絵文字の数え方は概算なので、投稿直前に各SNSで確認してください。スレッドは各パート別に制限します。</p>
+</div>
+<div class="card" id="freeAi40Panel" style="background:#f0f7ff;border:2px solid #99badf">
+<h2>✨ 完全無料AI生成（接続テスト）</h2>
+<p class="help">ChatGPTでJSONをコピーせず、アプリ内でGeminiの無料AIから投稿14本を直接生成する構成です。現在は安全な中継Workerが未接続のため、<b>実際のAI生成はまだ使用できません</b>。テスト用の架空文章は生成しません。</p>
+<p class="help"><a href="free-ai-v40-setup.html" target="_blank" rel="noopener">📱 iPhoneで無料AIを接続する手順を見る</a></p>
+<p class="help">投稿開始日・アカウント（14本）・XまたはThreads・文字数は上の設定で先に選んでください。無料AIでは現在1アカウント14本ずつ生成します。</p>
+<details>
+<summary style="padding:9px 0;font-weight:700">運営者用：公開AI接続設定（一般利用者の操作は不要）</summary>
+<label for="freeAi40Endpoint">Cloudflare Workerの公開URL（/generateまで）</label>
+<input id="freeAi40Endpoint" type="url" inputmode="url" placeholder="https://your-worker.workers.dev/generate" autocomplete="off">
+<label for="freeAi40Sitekey">Turnstileの公開サイトキー（秘密キーではありません）</label>
+<input id="freeAi40Sitekey" type="text" autocomplete="off" placeholder="公開サイトキーを入力">
+<button class="secondary" type="button" onclick="freeAi40Connect()">公開Workerと接続</button>
+<button class="secondary" type="button" onclick="freeAi40ClearPublicConfig()">このテストの接続設定だけ消去</button>
+<p class="help">Worker URLとTurnstileの公開サイトキーだけをテスト版ブラウザ内に保存します。Gemini APIキーやTurnstile秘密キーを入力する欄はありません。</p>
+</details>
+<div id="freeAi40Challenge" style="margin-top:12px;min-height:8px"></div>
+<label style="font-size:13px;line-height:1.75;font-weight:normal;display:flex;gap:10px;align-items:start">
+<input type="checkbox" id="freeAi40Consent" style="width:23px;height:23px;flex:none;margin-top:4px">
+<span>私は18歳以上です。無料枠へ送る投稿条件と、AIが生成する回答がGoogleのサービス改善に利用される場合があることを理解しました。個人情報や機密情報は送信しません。</span>
+</label>
+<button class="primary" id="freeAi40GenerateButton" type="button" onclick="freeAi40Generate()">✨ 無料AIで14本を生成して確認</button>
+<p id="freeAi40Status" class="status" role="status" aria-live="polite">無料AIの接続は未設定です。安全確認と接続が完了するまで、実際のAI生成は行いません。</p>
+<p class="help">誤った文章や同じ題材の再利用を防ぐため、生成結果は従来の重複検査・確認画面へ送ります。確認ボタンを押さない限り保存しません。無料枠の上限に達した場合は課金せずに停止します。通常版Ver.3.8の投稿・履歴・設定へは一切書き込みません。</p>
+<p class="help"><a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Gemini APIの無料枠の利用条件を確認</a></p>
 </div>
 <p id="referenceUsageSummary37" role="status">参考投稿ライブラリを読み込み中...</p>
 <div id="refAppliedPreview371" class="ref-preview-box371" aria-live="polite"></div>
