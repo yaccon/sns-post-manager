@@ -1,0 +1,25 @@
+name: Ver4.0 無料AI生成・無料枠保護テスト
+on:
+  pull_request:
+    paths:
+      - 'free-ai-v40/**'
+      - 'qa-free-ai-v40.html'
+      - '.github/workflows/free-ai-v40.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify-safe-free-ai:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check JS syntax
+        run: node --check free-ai-v40/worker.mjs && node --check free-ai-v40/client.js && node --check free-ai-v40/postformat40-qa.js
+      - name: Test Gemini free-tier backend and privacy boundaries
+        run: node --test free-ai-v40/tests/worker.test.mjs
+      - name: Confirm production remains Ver.3.8 and QA data is isolated
+        run: node --test free-ai-v40/tests/ui-isolation.test.mjs
