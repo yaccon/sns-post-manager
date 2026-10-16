@@ -18,7 +18,7 @@
 1. Cloudflare Workers Free（APIキーの安全な中継先）。現行無料枠の目安：1日100,000リクエスト、CPU実行制限あり。超過時はリクエスト停止。
 2. Google AI StudioでGemini APIの**無料枠**プロジェクトを確認し、APIキーを発行。**必ず料金が発生しない無料枠にとどめ、有料枠・請求先アカウントを有効化しないこと。**料金制度や無料対象モデルは予告なく変わり得る。
 3. Cloudflare Turnstile（無料のBot対策）。公表可能なsitekeyをアプリへ、秘密のsecretをWorkerへ登録。
-4. Cloudflare Rate Limiting Binding：1接続元3回/60秒、アプリ全体12回/60秒。Bot対策と無料API枠の消耗防止。携帯回線では接続元IPが共有される場合があるので、一部の正規ユーザーにも待機をお願いする可能性がある。
+4. Cloudflare Rate Limiting Binding：1接続元3回/60秒と共通キー12回/60秒。ただしこの制限はCloudflare拠点ごとで、厳密な世界共通合計上限ではない。Bot対策と無料API枠の消耗抑制には有効だが、確実な全体予算上限にはならない。携帯回線では接続元IPが共有される場合があるので、一部の正規ユーザーにも待機をお願いする可能性がある。
 
 ### 秘密キーの保護
 - GitHub Pagesの `index.html`、ブラウザの `localStorage`、GitHubコミット、ChatGPT会話にAPIキーを入れない。
@@ -54,3 +54,5 @@
 - Workers Rate Limiting： https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/
 - Turnstileサーバー検証： https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
 - Workers Secret： https://developers.cloudflare.com/workers/configuration/secrets/
+
+**重要：** 無料枠APIキーが課金済みプロジェクトに属している場合、Cloudflare側の分散型レート制限だけでは請求をゼロに保証できない。公開前にGoogle AI Studio上のプロジェクトを未課金に保ち、使用状況を監視すること。将来ユーザーが増えたら、Durable Objects等の一元化された厳格な日次予算制御を別途設計する。
