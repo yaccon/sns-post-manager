@@ -1,0 +1,6 @@
+{
+  "name": "sns-post-manager-free-ai-beta",
+  "main": "bootstrap-disabled.mjs",
+  "compatibility_date": "2026-10-16",
+  "workers_dev": true
+}
