@@ -78,7 +78,7 @@ async function restore(a,obj,yes=true){
 }
 test('v3.7 markup and scripts parse; existing post/history key names do not change',()=>{
  for(const code of [inline,library,historyJs,importerJs])assert.doesNotThrow(()=>new vm.Script(code));
- assert.match(html,/Ver\.3\.8/);
+ assert.match(html,/Ver\.3\.(?:8|9)/);
  assert.match(html,/const key="sns-post-manager-v1"/);
  assert.match(html,/const historyKey="sns-post-manager-history-v1"/);
  assert.match(html,/const referenceKey="sns-post-manager-references-v1"/);
