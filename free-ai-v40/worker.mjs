@@ -4,7 +4,7 @@
  *
  * Secret bindings (Cloudflare dashboard, never GitHub):
  *   GEMINI_API_KEY, TURNSTILE_SECRET
- * Rate limit bindings required: USER_LIMITER, GLOBAL_LIMITER.
+ * Rate limit bindings: USER_LIMITER, GLOBAL_LIMITER and strictly global DAILY_BUDGET.
  *
  * No upstream provider requests if a required secret, Turnstile, rate limiter,
  * origin, residency check or explicit processing consent is missing.
@@ -152,7 +152,7 @@ export default {
   }});
   if(new URL(request.url).pathname!=="/generate"||request.method!=="POST")return reject("対象外の操作です。",404);
   if(request.cf?.country!=="JP")return reject("この試作版は日本国内向けです。",403);
-  if(!env?.GEMINI_API_KEY||!env?.TURNSTILE_SECRET||!env?.USER_LIMITER?.limit||!env?.GLOBAL_LIMITER?.limit)
+  if(!env?.GEMINI_API_KEY||!env?.TURNSTILE_SECRET||!env?.USER_LIMITER?.limit||!env?.GLOBAL_LIMITER?.limit||!env?.DAILY_BUDGET?.getByName)
    return reject("無料AI接続の準備が完了していません。",503);
   if(Number(request.headers.get("Content-Length"))>MAX_BODY_BYTES)return reject("送信データが大きすぎます。",413);
   let payload;
@@ -176,10 +176,15 @@ export default {
     env.GLOBAL_LIMITER.limit({key:"global-free-api"})
    ]);
    if(!perUser.success||!global.success)return reject("無料枠を公平に使うため少し時間を空けてください。",429);
+   // Regional Cloudflare rate-limit bindings alone are not a global budget.
+   // Reserve a globally consistent UTC-day quota BEFORE every provider request.
+   const budget=await env.DAILY_BUDGET.getByName("free-ai-global-daily-v40").reserve();
+   if(!budget||budget.allowed!==true)return reject("無料AIの本日分の生成上限に達しました。課金せずに停止します。",429);
    const prompt=buildPrompt(validated);
    const model=env.GEMINI_MODEL||DEFAULT_MODEL;
-   // Safety: allow only the verified free-tier model. Never permit a paid-model fallback.
-   if(model!==DEFAULT_MODEL)return reject("無料AIモデル以外は使用できません。設定を確認してください。",503);
+   // Fail closed: explicitly allowlist only documented Free Tier model IDs.
+   if(!["gemini-3.5-flash-lite","gemini-3.1-flash-lite"].includes(model))
+    return reject("無料モデル以外は使用できません。設定を確認してください。",503);
    const provider=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{
     method:"POST",
     headers:{"content-type":"application/json","x-goog-api-key":env.GEMINI_API_KEY},
