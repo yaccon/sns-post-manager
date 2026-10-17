@@ -129,7 +129,8 @@ async function freeAi40Generate(){
    input.value=old;
    freeAi40Status("生成内容の安全確認に失敗しました。投稿データは保存していません。下の取り込み理由を確認してください。");return;
   }
-  freeAi40Status("14本を生成しました。下の重複確認を見てから、必要な投稿だけ登録してください。登録前に保存されることはありません。");
+  const rest=Number.isInteger(data.freeRemaining)?" このアプリ全体の本日残り生成枠："+data.freeRemaining+"回。":"";
+  freeAi40Status("14本を生成しました。下の重複確認を見てから、必要な投稿だけ登録してください。"+rest+"登録前に保存されることはありません。");
   const panel=document.getElementById("importReview");
   if(panel?.scrollIntoView)panel.scrollIntoView({block:"start",behavior:"smooth"});
  }catch{
