@@ -16,6 +16,7 @@ function env(opts={}){
   GEMINI_API_KEY:"secret-never-leak",
   TURNSTILE_SECRET:"secret-for-turnstile",
   GEMINI_MODEL:DEFAULT_MODEL,
+  FREE_AI_ENABLED:"true",
   USER_LIMITER:{limit:async()=>{store.limit++;return {success:true}}},
   GLOBAL_LIMITER:{limit:async()=>({success:true})},
   DAILY_BUDGET:{getByName:(name)=>({reserve:async()=>({allowed:true,used:1,limit:12,day:"2026-10-17"})})},
@@ -258,4 +259,20 @@ test("iPhone no-charge /health reveals readiness only and never uses provider or
   assert.equal((await worker.fetch(req(params,{method:"GET",path:"/health",origin:"https://evil.example"}),configured)).status,403);
  });
  assert.equal(calls.length,0);
+});
+
+test("Default-off beta rejects requests and health stays not-ready without any external fetch",async()=>{
+ let calls=0;
+ await withFakeFetch(async()=>{calls++;throw Error("outbound request was forbidden")},async()=>{
+  for(const setting of [undefined,"false","TRUE",null]){
+   const e=env({FREE_AI_ENABLED:setting});
+   const health=await worker.fetch(req(params,{method:"GET",path:"/health"}),e);
+   assert.equal((await health.json()).ready,false);
+   const generation=await worker.fetch(req(params),e);
+   assert.equal(generation.status,503);
+   const message=await generation.json();
+   assert.match(message.error,/OFF/);
+  }
+ });
+ assert.equal(calls,0);
 });
