@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "sns-post-manager-free-ai-beta",
-  "main": "worker.mjs",
+  "main": "runtime.mjs",
   "compatibility_date": "2026-10-16",
   "workers_dev": true,
   "vars": {
@@ -30,5 +30,19 @@
         "period": 60
       }
     }
-  ]
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DAILY_BUDGET",
+        "class_name": "GlobalDailyBudget"
+      }
+    ]
+  },
+  "exports": {
+    "GlobalDailyBudget": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  }
 }
