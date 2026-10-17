@@ -31,59 +31,76 @@ footer{padding:6px 18px 24px;text-align:center;color:#596b82;font-size:12px}
 <h2>まず確認すること</h2>
 <p class="hint">無料アプリの運営者だけがGoogle AI StudioとCloudflareを設定します。ユーザーにはAPIキーもクレジットカードも求めません。</p>
 <p class="warning">【重要】Geminiプロジェクトに<strong>請求先アカウントをリンクしない</strong>でください。無料モデルでも有料プロジェクトから呼ぶと料金がかかる可能性があります。Cloudflareも<strong>Free</strong>プランを選び、有料プランへ切り替えません。</p>
-<p>準備進捗：<span id="progress">0 / 6</span></p><progress id="bar" max="6" value="0"></progress>
+<p>準備進捗：<span id="progress">0 / 7</span></p><progress id="bar" max="7" value="0"></progress>
 <p class="muted">チェックはこのブラウザのテスト用領域に保存されます。APIキー、秘密キー、メールアドレスは保存しません。</p>
 </section>
 
-<section><div class="stepno">STEP 1 / 6</div><h2>Google AI Studioの無料APIキー</h2>
+<section><div class="stepno">STEP 1 / 7</div><h2>Google AI Studioの無料APIキー</h2>
 <p>Googleアカウントで開き、プロジェクトが<strong>Free tier・請求先未設定</strong>であることを確認します。Gemini 3.5 Flash-Liteの無料利用が可能か確認したうえでAPIキーを発行します。</p>
 <a class="go" href="https://aistudio.google.com/api-keys" target="_blank" rel="noopener">Google AI Studioを開く ↗</a>
 <p class="warning">「Set up billing」「Upgrade to Paid」「お支払い情報を設定」は押しません。Google Cloudに別の請求先を登録済みの場合、今回のプロジェクトの請求先も必ず確認してください。</p>
 <label class="checkrow"><input type="checkbox" data-step="1"> <span>無料・請求先未設定のプロジェクトを確認し、APIキーを安全な場所に控えた</span></label>
 </section>
 
-<section><div class="stepno">STEP 2 / 6</div><h2>Cloudflareの無料アカウント</h2>
+<section><div class="stepno">STEP 2 / 7</div><h2>Cloudflareの無料アカウント</h2>
 <p>Cloudflareにログインし、Workers &amp; Pagesの利用を確認します。初めての場合は無料アカウントを作成します。</p>
 <a class="go" href="https://dash.cloudflare.com/" target="_blank" rel="noopener">Cloudflareダッシュボードを開く ↗</a>
 <label class="checkrow"><input type="checkbox" data-step="2"> <span>Cloudflareにログインできた（Freeプラン）</span></label>
 </section>
 
-<section><div class="stepno">STEP 3 / 6</div><h2>Turnstileで迷惑利用を防ぐ</h2>
+<section><div class="stepno">STEP 3 / 7</div><h2>Turnstileで迷惑利用を防ぐ</h2>
 <p>CloudflareのTurnstileで「Add widget」→ ウィジェットを作成。<strong>Hostname</strong>に <code>yaccon.github.io</code>、表示方式にManagedを指定します。</p>
 <a class="go" href="https://dash.cloudflare.com/?to=/:account/turnstile" target="_blank" rel="noopener">Turnstile設定を開く ↗</a>
 <ul><li><strong>Sitekey（公開キー）</strong>：あとでVer.4.0のテスト画面へ入力しても大丈夫です。</li><li><strong>Secret key（秘密キー）</strong>：後でCloudflare WorkerのSecret変数として登録します。ChatGPTやGitHubへ貼らないでください。</li></ul>
 <label class="checkrow"><input type="checkbox" data-step="3"> <span>SitekeyとSecret keyを発行し、区別して保管した</span></label>
 </section>
 
-<section><div class="stepno">STEP 4 / 6</div><h2>Cloudflare Workerを用意</h2>
-<p>「Workers &amp; Pages」からWorkerを新規作成します。名前は <code>sns-post-manager-free-ai-beta</code> にします。この段階ではHello Worldのままで構いません。</p>
-<p>Workerの「Settings」→「Variables and Secrets」で、<strong>Type: Secret</strong>として次の2つを追加します。</p>
-<ul><li><code>GEMINI_API_KEY</code> → Google AI Studioで発行した秘密のキー</li><li><code>TURNSTILE_SECRET</code> → Cloudflare Turnstileの秘密キー</li></ul>
-<p class="warning">2つとも<strong>Secret</strong>であり、普通の「Text」変数やビルド用変数として登録しないでください。ここで設定した値を私やこのチャットに見せる必要はありません。</p>
-<a class="go" href="https://dash.cloudflare.com/?to=/:account/workers-and-pages" target="_blank" rel="noopener">Workers &amp; Pagesを開く ↗</a>
-<label class="checkrow"><input type="checkbox" data-step="4"> <span>Workerを作成し、秘密の変数2つをWorker側に登録した</span></label>
+<section><div class="stepno">STEP 4 / 7</div><h2>Cloudflareの接続用トークンを用意</h2>
+<p>GitHubの手動公開に必要なのは<strong>CloudflareのアカウントID</strong>と<strong>Cloudflare APIトークン</strong>です。Workerを手動作成したりGitHub Buildsを連携したりする必要はありません。</p>
+<a class="go" href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">Cloudflare APIトークンを作成 ↗</a>
+<p><strong>「Create Token」→「Edit Cloudflare Workers」</strong>を選び、操作できる範囲を今回のCloudflareアカウントだけに限定してください。</p>
+<p>アカウントIDはCloudflareの該当アカウントの概要画面から確認します。トークンとアカウントIDはどちらもチャットや公開ページに貼らず、次のGitHub Actions Secretsにのみ登録します。</p>
+<label class="checkrow"><input type="checkbox" data-step="4"> <span>対象アカウントだけのトークンを作成し、CloudflareのアカウントIDを確認した</span></label>
 </section>
 
-<section><div class="stepno">STEP 5 / 6</div><h2>GitHubの試作コードをWorkerへ接続</h2>
-<p>Workerの「Settings」→「Builds」→「Connect」からGitHubのリポジトリを選びます。</p>
+<section><div class="stepno">STEP 5 / 7</div><h2>GitHubへ秘密情報を4つ登録</h2>
+<p>GitHubのリポジトリ「Settings」→「Secrets and variables」→「Actions」→「New repository secret」で、次の4つを登録します。一般ユーザーはこの操作をしません。</p>
 <ul>
-<li>Repository：<code>yaccon/sns-post-manager</code></li>
-<li>Root directory：<code>free-ai-v40</code></li>
-<li>Production branch：<code>feature/free-gemini-v40-20261016</code></li>
-<li>Worker name：<code>sns-post-manager-free-ai-beta</code></li>
+<li><code>CLOUDFLARE_ACCOUNT_ID</code> → STEP 4 のCloudflareアカウントID</li>
+<li><code>CLOUDFLARE_API_TOKEN</code> → STEP 4 のCloudflare接続用トークン</li>
+<li><code>GEMINI_API_KEY</code> → STEP 1 の請求先未設定・無料プロジェクトのAPIキー</li>
+<li><code>TURNSTILE_SECRET</code> → STEP 3 のTurnstile秘密キー</li>
 </ul>
-<p>デプロイコマンドは原則 <code>npx wrangler deploy</code> 。設定ファイル <code>free-ai-v40/wrangler.json</code> が使用される状態にしてください。このファイルで「1分3回/接続元・12回/Cloudflare拠点」の短期制限と、<strong>Durable Objects（SQLite）による全世界合計1日12回の生成上限</strong>を宣言しています。</p>
-<p class="warning">Cloudflareの通常のレート制限は拠点別なので、単体では全世界合計の保証ができません。今回は別途SQLite Durable Objectで1日12回の予約枠を管理し、超過時は生成を停止します。WorkerとDurable Objectsの<strong>Freeプラン</strong>を維持してください。ビルド失敗時は<strong>課金や設定の変更をせず</strong>、エラー画面をスクリーンショットで相談してください。</p>
-<a class="go" href="https://github.com/yaccon/sns-post-manager/tree/feature/free-gemini-v40-20261016/free-ai-v40" target="_blank" rel="noopener">GitHubのWorker試作コードを見る ↗</a>
-<p class="hint"><strong>接続時に確認：</strong> <code>wrangler.json</code> の <code>main</code> は <code>runtime.mjs</code>、<code>DAILY_BUDGET</code> は <code>GlobalDailyBudget</code> のSQLite保存を使います。Buildの成功と、WorkerのHTTPS URLが公開されていることを確認してください。GitHubの古い「Hello World」コードだけではAI生成はできません。</p>
-<label class="checkrow"><input type="checkbox" data-step="5"> <span>WorkerのGitHubビルドが成功し、HTTPSの公開URLを確認できた</span></label>
+<a class="go" href="https://github.com/yaccon/sns-post-manager/settings/secrets/actions" target="_blank" rel="noopener">GitHubのSecrets設定を開く ↗</a>
+<p class="warning"><strong>4つともGitHubのSecretsに入力します。</strong> 通常のファイル、Issue、チャット、画面の公開設定欄には入力しません。GitHubで設定タブが出ない場合はiPhoneブラウザで「デスクトップ用Webサイトを表示」を選びます。</p>
+<label class="checkrow"><input type="checkbox" data-step="5"> <span>4つのRepository Secretsを登録した（値をこのアプリには入力していない）</span></label>
 </section>
 
-<section><div class="stepno">STEP 6 / 6</div><h2>iPhoneでAI生成を動作確認</h2>
-<p>下のVer.4.0独立テストページを開き、運営者欄に<strong>公開Worker URL</strong>（末尾に <code>/generate</code>）と<strong>公開Sitekey</strong>を入力します。秘密キーは絶対に入力しません。</p>
-<a class="go" href="qa-free-ai-v40.html?v=401" target="_blank" rel="noopener">Ver.4.0独立テストを開く ↗</a>
-<p>最初は「カイ14本・X通常投稿」を選択 → 安全確認 →「無料AIで14本を生成して確認」を押します。生成結果は確認用に表示するだけで、<strong>承認するまで投稿は保存されません</strong>。</p>
-<label class="checkrow"><input type="checkbox" data-step="6"> <span>実際の14投稿を生成でき、登録前の確認画面が表示された</span></label>
+<section><div class="stepno">STEP 6 / 7</div><h2>GitHubから手動公開（最初はOFF）</h2>
+<p>GitHubの「Actions」→<strong>「手動公開・無料AI接続ベータ（Cloudflare）」</strong>を選び、<strong>「Run workflow」</strong>で実行します。</p>
+<ul>
+<li>Workflowのブランチ：<code>main</code> を選択（Actionsの実行ボタンがある場所）</li>
+<li>承認欄：<code>DEPLOY_FREE_BETA</code> を入力</li>
+<li>公開スイッチ：<strong><code>KEEP_DISABLED</code></strong> を選ぶ（最初はこちら）</li>
+</ul>
+<p>コードは検証中の開発ブランチから取り込み、GitHub ActionsがWorkerを構築します。4つの秘密情報が不足していれば公開処理は途中で停止します。</p>
+<p>GitHub Actionsで成功を確認できたら、公開URL（<code>https://〇〇.workers.dev</code> のようなもの）をメモします。秘密キーは不要です。</p>
+<p class="hint">最初のOFF状態では、誤操作による実AI呼び出しを防ぐため「生成できません」と表示します。初回のテストで実AI生成したいときは、<strong>同じWorkflowをもう一度</strong>、公開スイッチに <code>ENABLE_FREE_AI</code> を選んで実行してください。確認せずONにしないでください。</p>
+<a class="go" href="https://github.com/yaccon/sns-post-manager/actions/workflows/free-ai-v40-manual-deploy.yml" target="_blank" rel="noopener">手動公開のActionsを開く ↗</a>
+<label class="checkrow"><input type="checkbox" data-step="6"> <span>GitHub Actionsの公開処理が成功し、公開URLを確認できた</span></label>
+</section>
+
+<section><div class="stepno">STEP 7 / 7</div><h2>iPhoneで本物の無料AI投稿を生成</h2>
+<p>GitHub Actionsの公開スイッチを <code>ENABLE_FREE_AI</code> で有効化したら、Ver.4.0の独立テスト版で次を入力します。</p>
+<ul>
+<li><strong>公開Worker URL</strong>（最後に <code>/generate</code> を付ける）</li>
+<li>STEP 3 のTurnstile <strong>公開Sitekey</strong>（秘密キーではない）</li>
+</ul>
+<a class="go" href="qa-free-ai-v40.html?v=402" target="_blank" rel="noopener">Ver.4.0 独立テスト画面を開く ↗</a>
+<p>投稿開始日を選び、生成する本数を「カイ14本」、投稿先を「X通常投稿」に設定 → 安全確認 → 同意 →「無料AIで14本を生成して確認」。</p>
+<p>最初は14本の生成成功と登録前確認が表示されるかだけ確認してください。確認しただけでは保存されず、通常版Ver.3.8の投稿・履歴にも一切影響しません。</p>
+<p class="warning">Geminiの無料枠には利用回数制限とデータ利用条件があります。利用可能枠がなくなった場合は<strong>課金せず停止</strong>します。Google AI Studioのプロジェクトは必ず請求先未設定のままにしてください。</p>
+<label class="checkrow"><input type="checkbox" data-step="7"> <span>Geminiで14本の投稿が作成され、保存前の確認画面を表示できた</span></label>
 </section>
 
 <section><h2>作業前後の確認</h2>
@@ -94,7 +111,7 @@ footer{padding:6px 18px 24px;text-align:center;color:#596b82;font-size:12px}
 </section>
 </main><footer>運営者向け試作ガイド。無料枠・仕様は変更される場合があります。</footer>
 <script>
-const KEY="sns-post-manager-free-ai-v40-onboarding-checks";
+const KEY="sns-post-manager-free-ai-v40-onboarding-checks-v2";
 const inputs=[...document.querySelectorAll('[data-step]')];
 try{const saved=JSON.parse(localStorage.getItem(KEY)||"[]");for(const x of inputs)x.checked=saved.includes(x.dataset.step)}catch{}
 function refresh(){const count=inputs.filter(x=>x.checked).length;document.getElementById("progress").textContent=count+" / "+inputs.length;document.getElementById("bar").value=count;try{localStorage.setItem(KEY,JSON.stringify(inputs.filter(x=>x.checked).map(x=>x.dataset.step)))}catch{}}
