@@ -34,7 +34,7 @@ function freeAi40Status(message){
  const el=document.getElementById("freeAi40Status");
  if(el)el.textContent=message;
 }
-function freeAi40Connect(){
+async function freeAi40Connect(){
  const {endpoint,sitekey}=freeAi40Config();
  if(!endpoint||!sitekey){
   freeAi40Status("実AI接続はまだ設定されていません。無料Worker公開後、公開URLとTurnstileの公開サイトキーを登録して接続します。");
@@ -44,6 +44,21 @@ function freeAi40Connect(){
  try{url=new URL(endpoint)}catch{freeAi40Status("WorkerのURLを確認してください。");return}
  if(url.protocol!=="https:"||url.pathname!=="/generate"||url.username||url.password){
   freeAi40Status("接続URLはHTTPSの /generate で終わる公開Worker URLを指定してください。");
+  return;
+ }
+ // Readiness check requires no AI calls and reveals no private credentials.
+ freeAi40Status("無料AIの接続状況を確認中です。");
+ try{
+  const check=await fetch(new URL("/health",url).href,{
+   method:"GET",cache:"no-store",signal:AbortSignal.timeout(10000)
+  });
+  const data=await check.json().catch(()=>({}));
+  if(!check.ok||data.ok!==true||data.ready!==true){
+   freeAi40Status("無料AIの中継先はまだ準備できていません。CloudflareのWorker公開・秘密変数2つ・無料枠上限設定を確認してください。");
+   return;
+  }
+ }catch(e){
+  freeAi40Status("無料AIの中継先に接続できません。Worker公開URL（/generateまで）とCloudflareの公開状況を確認してください。");
   return;
  }
  if(!window.turnstile||typeof window.turnstile.render!=="function"){
@@ -114,7 +129,8 @@ async function freeAi40Generate(){
    input.value=old;
    freeAi40Status("生成内容の安全確認に失敗しました。投稿データは保存していません。下の取り込み理由を確認してください。");return;
   }
-  freeAi40Status("14本を生成しました。下の重複確認を見てから、必要な投稿だけ登録してください。登録前に保存されることはありません。");
+  const rest=Number.isInteger(data.freeRemaining)?" このアプリ全体の本日残り生成枠："+data.freeRemaining+"回。":"";
+  freeAi40Status("14本を生成しました。下の重複確認を見てから、必要な投稿だけ登録してください。"+rest+"登録前に保存されることはありません。");
   const panel=document.getElementById("importReview");
   if(panel?.scrollIntoView)panel.scrollIntoView({block:"start",behavior:"smooth"});
  }catch{
