@@ -9,6 +9,8 @@ const client=fs.readFileSync("free-ai-v40/client.js","utf8");
 const setup=fs.readFileSync("free-ai-v40-setup.html","utf8");
 const formatter=fs.readFileSync("free-ai-v40/postformat40-qa.js","utf8");
 const backend=fs.readFileSync("free-ai-v40/worker.mjs","utf8");
+const dailyQuota=fs.readFileSync("free-ai-v40/quota.mjs","utf8");
+const runtime=fs.readFileSync("free-ai-v40/runtime.mjs","utf8");
 const config=JSON.parse(fs.readFileSync("free-ai-v40/wrangler.json","utf8"));
 
 test("Ver3.8 production remains untouched in free AI prototype",()=>{
@@ -95,4 +97,17 @@ test("iPhone QA remembers public endpoint and sitekey only, and can forget them"
  assert.match(qa,/onclick="freeAi40ClearPublicConfig\(\)"/);
  assert.match(qa,/free-ai-v40-setup\.html/);
  assert.doesNotMatch(client,/localStorage\.setItem\([^,]+,\s*(?:env|apiKey|secretKey)/);
+});
+
+test("Cloudflare config must have globally durable, free SQLite quota not a region-only rate limiter",()=>{
+ assert.equal(config.main,"runtime.mjs");
+ assert.deepEqual(config.durable_objects.bindings,[{name:"DAILY_BUDGET",class_name:"GlobalDailyBudget"}]);
+ assert.deepEqual(config.exports.GlobalDailyBudget,{type:"durable-object",storage:"sqlite"});
+ assert.match(runtime,/extends DurableObject/);
+ assert.match(runtime,/reserveDailyQuota\(this\.ctx\.storage\)/);
+ assert.match(backend,/DAILY_BUDGET\.getByName\("free-ai-global-daily-v40"\)\.reserve\(\)/);
+ assert.match(backend,/budget\.allowed!==true/);
+ assert.match(dailyQuota,/MAX_PUBLIC_DAILY_GENERATIONS = 12/);
+ assert.match(backend,/gemini-3\.5-flash-lite/);
+ assert.match(backend,/gemini-3\.1-flash-lite/);
 });
