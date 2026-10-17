@@ -72,9 +72,10 @@ footer{padding:6px 18px 24px;text-align:center;color:#596b82;font-size:12px}
 <li>Production branch：<code>feature/free-gemini-v40-20261016</code></li>
 <li>Worker name：<code>sns-post-manager-free-ai-beta</code></li>
 </ul>
-<p>デプロイコマンドは原則 <code>npx wrangler deploy</code> 。設定ファイル <code>free-ai-v40/wrangler.json</code> が使用される状態にしてください。このファイルで「1分3回/接続元・12回/Cloudflare拠点」のレート制限を宣言しています。</p>
-<p class="warning">Cloudflareの「全拠点を合算した厳密な無料上限」はこの制限だけでは保証できません。正式公開には別途利用者数・APIクォータの監視が必要です。ビルド失敗時は<strong>課金や設定の変更をせず</strong>、エラー画面をスクリーンショットで相談してください。</p>
+<p>デプロイコマンドは原則 <code>npx wrangler deploy</code> 。設定ファイル <code>free-ai-v40/wrangler.json</code> が使用される状態にしてください。このファイルで「1分3回/接続元・12回/Cloudflare拠点」の短期制限と、<strong>Durable Objects（SQLite）による全世界合計1日12回の生成上限</strong>を宣言しています。</p>
+<p class="warning">Cloudflareの通常のレート制限は拠点別なので、単体では全世界合計の保証ができません。今回は別途SQLite Durable Objectで1日12回の予約枠を管理し、超過時は生成を停止します。WorkerとDurable Objectsの<strong>Freeプラン</strong>を維持してください。ビルド失敗時は<strong>課金や設定の変更をせず</strong>、エラー画面をスクリーンショットで相談してください。</p>
 <a class="go" href="https://github.com/yaccon/sns-post-manager/tree/feature/free-gemini-v40-20261016/free-ai-v40" target="_blank" rel="noopener">GitHubのWorker試作コードを見る ↗</a>
+<p class="hint"><strong>接続時に確認：</strong> <code>wrangler.json</code> の <code>main</code> は <code>runtime.mjs</code>、<code>DAILY_BUDGET</code> は <code>GlobalDailyBudget</code> のSQLite保存を使います。Buildの成功と、WorkerのHTTPS URLが公開されていることを確認してください。GitHubの古い「Hello World」コードだけではAI生成はできません。</p>
 <label class="checkrow"><input type="checkbox" data-step="5"> <span>WorkerのGitHubビルドが成功し、HTTPSの公開URLを確認できた</span></label>
 </section>
 
