@@ -19,13 +19,13 @@ jobs:
         with:
           node-version: '22'
       - name: Check JS syntax
-        run: node --check free-ai-v40/worker.mjs && node --check free-ai-v40/client.js && node --check free-ai-v40/postformat40-qa.js
+        run: node --check free-ai-v40/runtime.mjs && node --check free-ai-v40/worker.mjs && node --check free-ai-v40/quota.mjs && node --check free-ai-v40/client.js && node --check free-ai-v40/postformat40-qa.js
       - name: Validate Cloudflare Worker build without credentials or deployment
         working-directory: free-ai-v40
         run: |
           npx --yes wrangler@4 deploy --config wrangler.bootstrap.json --dry-run --outdir ./test-bootstrap
           npx --yes wrangler@4 deploy --config wrangler.json --dry-run --outdir ./test-build
       - name: Test Gemini free-tier backend and privacy boundaries
-        run: node --test free-ai-v40/tests/worker.test.mjs
+        run: node --test free-ai-v40/tests/worker.test.mjs free-ai-v40/tests/quota.test.mjs
       - name: Confirm production remains Ver.3.8 and QA data is isolated
         run: node --test free-ai-v40/tests/ui-isolation.test.mjs
