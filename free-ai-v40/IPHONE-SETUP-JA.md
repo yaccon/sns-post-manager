@@ -1,5 +1,9 @@
 # iPhoneだけで無料AI生成を接続する手順（Ver.4.0 試作）
 
+**最短の操作ガイド：** https://yaccon.github.io/sns-post-manager/free-ai-v40-setup.html?v=402
+
+下記の詳細手順より、上記のiPhone用7ステップ画面に従ってください（Cloudflareの自動GitHub Builds連携は使いません）。
+
 **現在：開発コードとテストは用意済み。Cloudflare/Geminiのアカウント接続は未実施。通常版はVer.3.8のまま。**
 
 この作業は **アプリの運営者が最初に1回だけ** 行います。アプリの一般利用者にAPIキーやCloudflareアカウントは要求しません。
@@ -39,9 +43,11 @@ Turnstileにはほかに公開用 **sitekey** がある。これは秘密情報�
 [リポジトリのActions Secrets画面](https://github.com/yaccon/sns-post-manager/settings/secrets/actions) へログインして、Repository secretsの「New repository secret」を押す。上記の**4つの名前を正確に**使用して値を登録する。入力画面に貼るだけで、このチャットには値を書かない。iPhoneで「Settings」が表示されなければブラウザの「デスクトップ用Webサイトを表示」を利用する。
 
 ### 6．手動で安全にWorkerを公開
-[GitHub Actions](https://github.com/yaccon/sns-post-manager/actions) で「手動公開・無料AI接続ベータ（Cloudflare）」を選び、「Run workflow」を押す。確認欄には **`DEPLOY_FREE_BETA`** と入力し実行する。
+[GitHub Actionsの専用ページ](https://github.com/yaccon/sns-post-manager/actions/workflows/free-ai-v40-manual-deploy.yml) で「手動公開・無料AI接続ベータ（Cloudflare）」→「Run workflow」を選ぶ。**Workflow選択ブランチは `main`**、確認欄に **`DEPLOY_FREE_BETA`** を入力。初回の公開スイッチは必ず **`KEEP_DISABLED`** にして実行する。Github Actionsは最新のVer.4.0開発ブランチからWorkerソースを取得する（古いmainのWorkerを公開しない）。
 
-このワークフローは4つのSecretが揃っていないと停止する。まずすべてのテストを実行し、閉じたWorker（API接続がまだ無い無効状態）を用意して秘密キー2つを安全に設定。その後はじめてレート制限付きのGemini API中継を公開する。**公開処理は手動のみで、通常版のGitHub Pagesには自動デプロイしない。**
+初回の公開成功後、Geminiを実際に呼び出すテストをするときだけ、同じ手動Workflowを **`ENABLE_FREE_AI`** で再実行する。通常の更新や初回接続確認では **`KEEP_DISABLED`** を選び、有効化を黙って引き継がない。
+
+このワークフローは4つのSecretが揃っていないと停止する。初回はWorkerを閉じた状態で公開・秘密キー2つを安全に設定する。運営者が `ENABLE_FREE_AI` を明示した実行だけが実生成可能となる。最初から有料枠に接続したり、APIキーを公開ファイルへ置く運用はしない。**公開処理は手動のみで、通常版のGitHub Pagesには自動デプロイしない。**
 
 ### 7．本物のAI生成をテスト
 Actionsのログから `https://...workers.dev` の**公開URLだけ**を確認し、末尾に `/generate` を付ける。
