@@ -39,7 +39,7 @@
 ## 実接続まで残っている作業
 1. ユーザー自身でCloudflare Free／Google AI Studio Free／Turnstileを準備する。**秘密鍵はこのチャットに貼らない。**
 2. WorkerをCloudflareへデプロイしてSecrets・Rate Limiting設定を有効化。
-3. iPhone QA画面でWorkerの公開URLとTurnstile sitekeyのみ設定。
+3. iPhone QA画面でWorkerの公開URLとTurnstile sitekeyのみ設定。「公開Workerと接続」で /health を確認。秘密変数とSQLite予算の有効/無効だけ確認し、秘密情報の中身は一切表示しない。Geminiには通信せず、日次回数を消費しない。
 4. X通常14本→Threads14本→Xスレッド14本の順で実際に生成し、JSON取り込み・履歴重複防止・投稿保存を実機確認。
 5. フリー版の使用回数表示、42本を順番に生成する仕組み、公開範囲・同意導線を仕上げ、バックアップ後にユーザーの明示許可を得て初めて通常版へ統合する。
 
