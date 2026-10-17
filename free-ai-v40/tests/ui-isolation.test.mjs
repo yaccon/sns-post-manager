@@ -111,3 +111,13 @@ test("Cloudflare config must have globally durable, free SQLite quota not a regi
  assert.match(backend,/gemini-3\.5-flash-lite/);
  assert.match(backend,/gemini-3\.1-flash-lite/);
 });
+
+test("iPhone connection confirmation checks Worker health without sending texts or charging free AI quota",()=>{
+ assert.match(client,/async function freeAi40Connect\(/);
+ assert.match(client,/new URL\("\/health",url\)/);
+ assert.match(client,/data\.ready!==true/);
+ assert.match(backend,/path==="\/health"&&request\.method==="GET"/);
+ assert.match(backend,/ready,freeOnly:true,dailyLimit:12/);
+ const between=backend.slice(backend.indexOf('if(path==="/health"'),backend.indexOf('if(path!=="/generate"'));
+ assert.doesNotMatch(between,/generativelanguage\.googleapis\.com|GEMINI_API_KEY\]/);
+});
