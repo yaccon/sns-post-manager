@@ -19,12 +19,14 @@
 2. Google AI StudioでGemini APIの**無料枠**プロジェクトを確認し、APIキーを発行。**必ず料金が発生しない無料枠にとどめ、有料枠・請求先アカウントを有効化しないこと。**料金制度や無料対象モデルは予告なく変わり得る。
 3. Cloudflare Turnstile（無料のBot対策）。公表可能なsitekeyをアプリへ、秘密のsecretをWorkerへ登録。
 4. Cloudflare Rate Limiting Binding：1接続元3回/60秒と共通キー12回/60秒。ただしこの制限はCloudflare拠点ごとで、厳密な世界共通合計上限ではない。Bot対策と無料API枠の消耗抑制には有効だが、確実な全体予算上限にはならない。携帯回線では接続元IPが共有される場合があるので、一部の正規ユーザーにも待機をお願いする可能性がある。
+5. **世界共通の1日12回上限**：Cloudflare Durable Objects の SQLite 無料枠を利用し、`DAILY_BUDGET` で東京・大阪など全Cloudflare拠点を合算して生成回数を先取り管理。UTC 0:00 に12回へリセット。失敗時も安全側に止め、無料枠を勝手に超えない。残数を節約するため失敗したAI生成も1回に数える（毎回必ず上流へリクエストするため）。
+6. Durable Objects の無料枠も無料上限超過後は失敗する。Workerから中継できない場合、**自動課金や別の有料モデルへの切り替えは行わない**。正式公開前にCloudflare FreeとGoogle AI Studio Freeの現状を必ず確認する。
 
 ### 秘密キーの保護
 - GitHub Pagesの `index.html`、ブラウザの `localStorage`、GitHubコミット、ChatGPT会話にAPIキーを入れない。
 - `GEMINI_API_KEY` と `TURNSTILE_SECRET` はCloudflare **Secret** にのみ設定。
-- `wrangler.json` にrate-limit bindingsと公開情報のみ書く。
-- Workerの `/generate` は、Origin・日本国内・18歳以上の同意・Turnstileのサーバー側検証・1分間のアクセス制限・必須Secretsがそろわない限り**Geminiに1回もアクセスしない**。
+- `wrangler.json` にrate-limit bindingsとSQLite Durable Objectのクラスを宣言し、公開情報のみ書く。実際のWorker入口は `runtime.mjs`、モデル呼び出し本体は `worker.mjs`、世界共通の1日予算は `quota.mjs` に分離。
+- Workerの `/generate` は、Origin・日本国内・18歳以上の同意・Turnstileのサーバー側検証・1分間のアクセス制限・1日12回のDurable Object予算・必須Secretsがそろわない限り**Geminiに1回もアクセスしない**。
 - 無料枠の429エラーで**即停止**。課金や他モデルへの自動切替、AIリトライは行わない。
 - Origin制限は認証の代わりにならない。Turnstileとレート制限を必須にする。公開前に無料API枠・濫用耐性の実負荷検査を行う。
 
@@ -56,3 +58,12 @@
 - Workers Secret： https://developers.cloudflare.com/workers/configuration/secrets/
 
 **重要：** 無料枠APIキーが課金済みプロジェクトに属している場合、Cloudflare側の分散型レート制限だけでは請求をゼロに保証できない。公開前にGoogle AI Studio上のプロジェクトを未課金に保ち、使用状況を監視すること。将来ユーザーが増えたら、Durable Objects等の一元化された厳格な日次予算制御を別途設計する。
+
+## 2026-10-17 検証補足：Cloudflare日次上限の誤解防止
+- 通常のRate Limiting Bindingは拠点単位・結果整合性が緩やかなため、世界合計上限にはならない。
+- SQLite Durable Objects は Cloudflare Workers Free でも使用でき、超過後の処理はエラーで停止する。無料枠に永続性のある集計が必要なので、DOを一つだけ生成する。
+- 1日12回は運用上の試作上限であり、無料AIの上限そのものを保証するものではない。必要に応じてさらに厳しく設定し、課金を防ぐ。
+- `wrangler.json` の `main` が `runtime.mjs` か、`exports.GlobalDailyBudget.storage` が `sqlite` か、`DAILY_BUDGET` のbindingがあるかをデプロイ前に確認する。
+- Free Tier対応モデルは `gemini-3.5-flash-lite` と `gemini-3.1-flash-lite` だけに制限する。新しいモデルを使う場合は都度無料枠の確認後にコードを修正する。
+
+参考：https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/ ・ https://developers.cloudflare.com/durable-objects/platform/pricing/ ・ https://developers.cloudflare.com/durable-objects/reference/durable-objects-migrations/
