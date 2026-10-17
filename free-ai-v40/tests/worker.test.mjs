@@ -112,6 +112,7 @@ test("Successful Gemini 14-post JSON remains unregistered until frontend reviews
   const json=await resp.json();
   assert.equal(json.ok,true);
   assert.equal(json.posts.length,14);
+  assert.equal(json.freeRemaining,11);
   assert.equal(json.posts[0].date,"2026-10-19T12:00");
   assert.equal(JSON.stringify(json).includes("secret-never-leak"),false);
   assert.equal(resp.headers.get("access-control-allow-origin"),ORIGIN);
