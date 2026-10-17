@@ -240,3 +240,21 @@ test("Alternative explicitly free Gemini 3.1 model is accepted without enabling 
   assert.equal(r.status,200);
  });
 });
+
+test("iPhone no-charge /health reveals readiness only and never uses provider or secret keys",async()=>{
+ const calls=[];
+ await withFakeFetch(async (...args)=>{calls.push(args);throw Error("health must stay offline")},async()=>{
+  const configured=env();
+  const ready=await worker.fetch(req(params,{method:"GET",path:"/health"}),configured);
+  assert.equal(ready.status,200);
+  const json=await ready.json();
+  assert.deepEqual(json,{ok:true,ready:true,freeOnly:true,dailyLimit:12});
+  assert.equal(JSON.stringify(json).includes("secret-never-leak"),false);
+  assert.equal(JSON.stringify(json).includes("secret-for-turnstile"),false);
+  const missing=await worker.fetch(req(params,{method:"GET",path:"/health"}),env({DAILY_BUDGET:null}));
+  assert.equal(missing.status,200);
+  assert.equal((await missing.json()).ready,false);
+  assert.equal((await worker.fetch(req(params,{method:"GET",path:"/health",origin:"https://evil.example"}),configured)).status,403);
+ });
+ assert.equal(calls.length,0);
+});
