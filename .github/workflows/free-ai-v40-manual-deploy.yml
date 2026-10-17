@@ -6,6 +6,14 @@ on:
         description: '公開操作を実行する場合だけ DEPLOY_FREE_BETA を入力'
         required: true
         type: string
+      activation:
+        description: '最初は KEEP_DISABLED。明示的にAIを有効化する時だけ ENABLE_FREE_AI'
+        type: choice
+        required: true
+        default: KEEP_DISABLED
+        options:
+          - KEEP_DISABLED
+          - ENABLE_FREE_AI
 permissions:
   contents: read
 jobs:
@@ -22,7 +30,10 @@ jobs:
       run:
         working-directory: free-ai-v40
     steps:
+      # This manual workflow is on main; use the audited beta branch for the Worker source.
       - uses: actions/checkout@v4
+        with:
+          ref: feature/free-gemini-v40-20261016
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -39,6 +50,18 @@ jobs:
         run: |
           npx --yes wrangler@4 deploy --config wrangler.bootstrap.json --dry-run
           npx --yes wrangler@4 deploy --config wrangler.json --dry-run
+      - name: Apply fail-closed activation in local deploy config only
+        env:
+          REQUESTED_ACTIVATION: ${{ inputs.activation }}
+        run: |
+          node --input-type=commonjs -e '
+            const fs=require("node:fs");
+            const file="wrangler.json";
+            const cfg=JSON.parse(fs.readFileSync(file,"utf8"));
+            cfg.vars.FREE_AI_ENABLED=process.env.REQUESTED_ACTIVATION==="ENABLE_FREE_AI"?"true":"false";
+            fs.writeFileSync(file,JSON.stringify(cfg,null,2)+"\n");
+            console.log("Free AI beta switch: "+(cfg.vars.FREE_AI_ENABLED==="true"?"EXPLICITLY ON":"OFF"));
+          '
       - name: Bootstrap closed Worker to allow first-time secret installation
         run: npx --yes wrangler@4 deploy --config wrangler.bootstrap.json
       - name: Securely install Gemini API key into Cloudflare Worker
