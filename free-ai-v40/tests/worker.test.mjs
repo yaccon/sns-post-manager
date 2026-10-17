@@ -18,6 +18,7 @@ function env(opts={}){
   GEMINI_MODEL:DEFAULT_MODEL,
   USER_LIMITER:{limit:async()=>{store.limit++;return {success:true}}},
   GLOBAL_LIMITER:{limit:async()=>({success:true})},
+  DAILY_BUDGET:{getByName:(name)=>({reserve:async()=>({allowed:true,used:1,limit:12,day:"2026-10-17"})})},
   ...opts
  };
 }
@@ -74,6 +75,7 @@ test("Rejects origin, country, age and missing secrets without any paid API netw
   assert.equal((await worker.fetch(req({...params,consentToFreeTierProcessing:false}),e)).status,403);
   assert.equal((await worker.fetch(req(params),{...e,GEMINI_API_KEY:null})).status,503);
   assert.equal((await worker.fetch(req(params),{...e,USER_LIMITER:null})).status,503);
+  assert.equal((await worker.fetch(req(params),{...e,DAILY_BUDGET:null})).status,503);
   assert.equal((await worker.fetch(req({...params,startDate:"bad"}),e)).status,422);
  });
  assert.equal(calls.length,0);
@@ -195,4 +197,46 @@ test("14 results can be returned in arbitrary order but exact duplicate/missing 
  assert.equal(validateGenerated(duplicate,cfg),null);
  const unknown=[...arr];unknown[3]={...unknown[3],date:"2027-01-01T12:00"};
  assert.equal(validateGenerated(unknown,cfg),null);
+});
+
+test("Global daily budget denies all Gemini calls independently of regional limiters",async()=>{
+ let modelCalls=0,quotaCalls=0;
+ await withFakeFetch(async(url)=>{
+  if(String(url).includes("siteverify"))return new Response(JSON.stringify({success:true,hostname:"yaccon.github.io"}));
+  modelCalls++;
+  return result(batch());
+ },async()=>{
+  const e=env({DAILY_BUDGET:{getByName:(name)=>{
+   assert.equal(name,"free-ai-global-daily-v40");
+   return {reserve:async()=>{quotaCalls++;return {allowed:false,used:12,limit:12}}};
+  }}});
+  const r=await worker.fetch(req(params),e);
+  assert.equal(r.status,429);
+  assert.match((await r.json()).error,/本日分の生成上限/);
+ });
+ assert.equal(quotaCalls,1);
+ assert.equal(modelCalls,0);
+});
+test("Global budget binding failure never calls Gemini",async()=>{
+ let modelCalls=0;
+ await withFakeFetch(async(url)=>{
+  if(String(url).includes("siteverify"))return new Response(JSON.stringify({success:true,hostname:"yaccon.github.io"}));
+  modelCalls++;
+  return result(batch());
+ },async()=>{
+  const e=env({DAILY_BUDGET:{getByName:()=>({reserve:async()=>{throw Error("Storage offline")}})}});
+  const r=await worker.fetch(req(params),e);
+  assert.equal(r.status,502);
+ });
+ assert.equal(modelCalls,0);
+});
+test("Alternative explicitly free Gemini 3.1 model is accepted without enabling paid models",async()=>{
+ await withFakeFetch(async(url,opts)=>{
+  if(String(url).includes("siteverify"))return new Response(JSON.stringify({success:true,hostname:"yaccon.github.io"}));
+  assert.match(String(url),/gemini-3\.1-flash-lite:generateContent/);
+  return result(batch());
+ },async()=>{
+  const r=await worker.fetch(req(params),env({GEMINI_MODEL:"gemini-3.1-flash-lite"}));
+  assert.equal(r.status,200);
+ });
 });
