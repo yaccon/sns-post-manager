@@ -36,6 +36,16 @@
 - 利用規約上、初期版は日本国内・18歳以上向けのみ。海外・未成年向け無料公開や広告展開は別途規約を確認する。
 - 実際の投稿に使う際は文章を必ず人が確認する（実績・作品設定の捏造を防ぐ）。
 
+## 2026-10-17 無料AIの誤公開防止・iPhone設定一本化
+
+- 本番アプリの `index.html` は引き続きVer.3.8のまま。
+- Cloudflareの `wrangler.json` は `FREE_AI_ENABLED: "false"` が初期値。/healthのreadyもfalseで実AI生成なし。
+- GitHub Actionsの手動公開Workflowは、mainに置かれた実行ボタンから起動しても **Ver.4.0開発ブランチの検証済みソース** をチェックアウト。mainに残る旧Workerファイルを誤ってデプロイしない。
+- 初回は `DEPLOY_FREE_BETA` と `KEEP_DISABLED` を選んでWorkerの鍵・接続・無料枠保護を準備する。運営者が `ENABLE_FREE_AI` を明示した二回目以降の操作のみ実AIを呼び出せる。
+- iPhoneの設定方法は `free-ai-v40-setup.html` の **7ステップに統一**。Cloudflareで空のWorkerを先に作りGitHub Buildsをつなぐ方式は採用しない。
+- CloudflareのWorkers Free/SQLite Durable Objects Free、およびGeminiの「課金先未設定Freeプロジェクト」を必須とする。APIに秘密キーを埋め込まず、課金ありプロジェクトを誤接続した際の請求リスクをゼロと保証しない。
+- Cloudflareへの実デプロイ・Gemini実リクエストはまだ未実施。ユーザーが無料アカウントとGitHub Secretsを設定してから初めて結合テスト可能。
+
 ## 実接続まで残っている作業
 1. ユーザー自身でCloudflare Free／Google AI Studio Free／Turnstileを準備する。**秘密鍵はこのチャットに貼らない。**
 2. WorkerをCloudflareへデプロイしてSecrets・Rate Limiting設定を有効化。
