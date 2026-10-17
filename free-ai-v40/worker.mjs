@@ -153,11 +153,13 @@ export default {
   const path=new URL(request.url).pathname;
   // Safe readiness check, no Gemini request, quota consumption or secret values.
   if(path==="/health"&&request.method==="GET"){
-   const ready=Boolean(env?.GEMINI_API_KEY&&env?.TURNSTILE_SECRET&&
+   const ready=Boolean(env?.FREE_AI_ENABLED==="true"&&env?.GEMINI_API_KEY&&env?.TURNSTILE_SECRET&&
     env?.USER_LIMITER?.limit&&env?.GLOBAL_LIMITER?.limit&&env?.DAILY_BUDGET?.getByName);
    return response({ok:true,ready,freeOnly:true,dailyLimit:12});
   }
   if(path!=="/generate"||request.method!=="POST")return reject("対象外の操作です。",404);
+  // New deployments stay OFF until the operator explicitly enables the free beta.
+  if(env?.FREE_AI_ENABLED!=="true")return reject("無料AIの公開スイッチがOFFです。運営者が確認してから有効にします。",503);
   if(request.cf?.country!=="JP")return reject("この試作版は日本国内向けです。",403);
   if(!env?.GEMINI_API_KEY||!env?.TURNSTILE_SECRET||!env?.USER_LIMITER?.limit||!env?.GLOBAL_LIMITER?.limit||!env?.DAILY_BUDGET?.getByName)
    return reject("無料AI接続の準備が完了していません。",503);
