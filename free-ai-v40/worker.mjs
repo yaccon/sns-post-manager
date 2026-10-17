@@ -208,7 +208,7 @@ export default {
    let parsed;try{parsed=JSON.parse(output)}catch{return reject("AIの回答が途中で切れました。再生成してください。",502)}
    const posts=validateGenerated(parsed,validated);
    if(!posts)return reject("生成した14件に日時・文字数・形式の不一致がありました。再生成してください。",502);
-   return response({ok:true,posts});
+   return response({ok:true,posts,freeRemaining:Math.max(0,budget.limit-budget.used)});
   }catch{
    return reject("AIとの通信を完了できませんでした。接続状況を確認してください。",502);
   }
