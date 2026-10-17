@@ -121,3 +121,15 @@ test("iPhone connection confirmation checks Worker health without sending texts 
  const between=backend.slice(backend.indexOf('if(path==="/health"'),backend.indexOf('if(path!=="/generate"'));
  assert.doesNotMatch(between,/generativelanguage\.googleapis\.com|GEMINI_API_KEY\]/);
 });
+
+test("Free AI rollout cannot start without explicit activation and defaults OFF",()=>{
+ assert.equal(config.vars.FREE_AI_ENABLED,"false");
+ assert.match(backend,/env\?\.FREE_AI_ENABLED!=="true"/);
+ const manual=fs.readFileSync(".github/workflows/free-ai-v40-manual-deploy.yml","utf8");
+ assert.match(manual,/ref: feature\/free-gemini-v40-20261016/);
+ assert.match(manual,/KEEP_DISABLED/);
+ assert.match(manual,/ENABLE_FREE_AI/);
+ assert.match(manual,/REQUESTED_ACTIVATION/);
+ assert.match(manual,/cfg\.vars\.FREE_AI_ENABLED/);
+ assert.doesNotMatch(manual,/echo "\$GEMINI_API_KEY"|echo "\$TURNSTILE_SECRET"/);
+});
