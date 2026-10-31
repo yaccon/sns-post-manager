@@ -724,6 +724,44 @@ function exportBackup(){
   if(url)setTimeout(()=>URL.revokeObjectURL(url),60000);
  }
 }
+/* Ver.3.8 stability fix: restore legacy backups without duplicating posts.
+   A stable ID is preferred when available; old rows without IDs use
+   account + destination + scheduled datetime + normalized content.
+   No active data is modified until the full import plan has been prepared. */
+function restorePostKey38(p){
+ return JSON.stringify([p.account||"",p.platform||"",p.date||"",norm(p.content)]);
+}
+function planRestorePosts38(rows,current=posts){
+ const existingIds=new Set(current.filter(p=>p.id!==undefined&&p.id!==null&&p.id!=="").map(p=>String(p.id)));
+ const usedIds=new Set(existingIds);
+ const usedKeys=new Set(current.map(restorePostKey38));
+ const additions=[];
+ for(const p of rows){
+  const suppliedId=p.id===undefined||p.id===null||p.id===""?null:String(p.id);
+  const key=restorePostKey38(p);
+  // An ID already stored on the device wins: never overwrite the current edit.
+  if(suppliedId!==null&&existingIds.has(suppliedId))continue;
+  // A duplicate content/date/account/destination is the same scheduled post.
+  if(usedKeys.has(key))continue;
+  let id=suppliedId===null?null:p.id;
+  // Preserve distinct posts in a backup even if their legacy IDs collide.
+  if(id===null||usedIds.has(String(id))){
+   do{id=Date.now()+"-restore-"+Math.random()}while(usedIds.has(String(id)));
+  }
+  additions.push({...p,id});
+  usedKeys.add(key);usedIds.add(String(id));
+ }
+ return additions;
+}
+function countRestoreHistory38(entries,current=history){
+ const seen=new Set(current.map(historyIdentity));let added=0;
+ for(const p of entries){
+  const id=historyIdentity(p);
+  if(seen.has(id))continue;
+  seen.add(id);added++;
+ }
+ return added;
+}
 function refreshBackupStatus(){
  const label=document.getElementById("backupHistoryCount");
  if(label)label.textContent="保存されている重複防止履歴："+history.length+"件 ／ 投稿予定："+posts.length+"件 ／ 参考投稿："+references.length+"件";
@@ -742,7 +780,7 @@ async function restoreBackup(e){
    throw Error("これは参考投稿専用バックアップです。「参考投稿ライブラリ」にある『バックアップファイルを選択』から復元してください。");
   }
   const arr=Array.isArray(data)?data:data?.posts;
-  if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"))throw Error("投稿データの形式が違います");
+  if(!Array.isArray(arr)||!arr.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"&&typeof p.platform==="string"&&(p.date===undefined||p.date===null||typeof p.date==="string")&&(p.id===undefined||p.id===null||typeof p.id==="string"||typeof p.id==="number")))throw Error("投稿データの形式が違います。本文・企画・SNS・日時・IDを確認してください。");
   const extra=Array.isArray(data.history)?data.history:[];
   if(!extra.every(p=>p&&typeof p.content==="string"&&typeof p.account==="string"))throw Error("履歴の形式が違います");
   if(data.references!==undefined&&!Array.isArray(data.references))throw Error("参考投稿の形式が違います");
@@ -757,23 +795,16 @@ async function restoreBackup(e){
    if(stagedRefs.length>=500)throw Error("参考投稿が500件を超えるため復元できません。");
    stagedRefs.push(r);knownRefIds.add(String(r.id));
   }
-  const knownIds=new Set(posts.map(p=>String(p.id)));
-  const newPostCount=arr.filter(p=>!knownIds.has(String(p.id))).length;
-  const knownHistory=new Set(history.map(historyIdentity));
-  const newHistoryCount=extra.filter(p=>!knownHistory.has(historyIdentity(p))).length;
+  const newPostCount=planRestorePosts38(arr,posts).length;
+  const newHistoryCount=countRestoreHistory38(extra,history);
   const newReferenceCount=stagedRefs.length-references.length;
   const label="ファイル："+file.name+
    "\n内容：投稿"+arr.length+"件・履歴"+extra.length+"件・参考投稿"+importedRefs.length+"件"+
    "\n現在の画面に追加される見込み：投稿"+newPostCount+"件・履歴"+newHistoryCount+"件・参考投稿"+newReferenceCount+"件。"+
    "\n\n復元しますか？（過去のVer.3.6以前のバックアップも読み込めます）";
   if(!await uiConfirm35(label)){status.textContent="復元をキャンセルしました。既存データに変更はありません。";return}
-  const oldPosts=posts,oldHistory=history.slice(),oldReferences=references.slice(),ids=new Set(posts.map(p=>String(p.id)));
-  posts=posts.slice();
-  for(const p of arr){
-   if(ids.has(String(p.id)))continue;
-   const id=p.id||Date.now()+"-"+Math.random();
-   posts.push({...p,id});ids.add(String(id));
-  }
+  const oldPosts=posts,oldHistory=history.slice(),oldReferences=references.slice();
+  posts=posts.concat(planRestorePosts38(arr,posts));
   addHistory(extra);
   references=stagedRefs;
   const addedPosts=posts.length-oldPosts.length,addedHistory=history.length-oldHistory.length;
