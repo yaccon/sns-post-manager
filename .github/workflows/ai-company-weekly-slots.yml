@@ -1,0 +1,30 @@
+name: AI会社 SNS42枠の定期起動テスト
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * 0'
+      timezone: 'Asia/Tokyo'
+  pull_request:
+    paths:
+      - 'scripts/ai-company/**'
+      - '.github/workflows/ai-company-weekly-slots.yml'
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run tests
+        run: node --test scripts/ai-company/prepare-weekly-slots.test.mjs
+      - name: Prepare next week's empty slots
+        run: node scripts/ai-company/prepare-weekly-slots.mjs --out outputs/weekly-slots.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: next-week-empty-slots
+          path: outputs/weekly-slots.json
+          retention-days: 14
